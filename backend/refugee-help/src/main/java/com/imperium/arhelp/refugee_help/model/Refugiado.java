@@ -65,13 +65,8 @@ public class Refugiado {
     public String getCidade() { return cidade; }
     public void setCidade(String cidade) { this.cidade = cidade; }
 
-    public String getNacionalidade() { return nacionalidade; }
-    public void setNacionalidade(String nacionalidade) { this.nacionalidade = nacionalidade; }
-
     public String getEnderecoCompleto() { return enderecoCompleto; }
     public void setEnderecoCompleto(String enderecoCompleto) { this.enderecoCompleto = enderecoCompleto; }
-
-
 
     public String getNecessidades() { return necessidades; }
     public void setNecessidades(String necessidades) { this.necessidades = necessidades; }
