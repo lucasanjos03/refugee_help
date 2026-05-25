@@ -1,50 +1,106 @@
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: dark;
-  color: #f3f4f6;
-  background-color: #111827;
+  font-family: 'Inter', system-ui, sans-serif;
+  scroll-behavior: smooth; /* Faz o efeito de deslizar suave ao clicar no header */
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  padding: 0;
+  background-color: #f8fafc; /* Fundo claro para as seções de baixo */
+  color: #1e293b;
 }
 
-#root {
+/* Container do Header fixo */
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 100%;
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  height: 70px;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  z-index: 1000;
+  box-sizing: border-box;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6rem 1.2rem;
-  font-size: 1rem;
+.nav-links a {
+  margin: 0 1rem;
+  color: #334155;
+  text-decoration: none;
   font-weight: 500;
-  font-family: inherit;
-  background-color: #2563eb;
-  color: white;
   cursor: pointer;
-  transition: background-color 0.25s;
-  margin: 0.5rem;
 }
-button:hover {
-  background-color: #1d4ed8;
+.nav-links a:hover {
+  color: #0f172a;
 }
 
-select {
-  padding: 0.5rem;
-  border-radius: 6px;
-  background-color: #1f2937;
-  color: white;
-  border: 1px solid #4b5563;
+/* Seção Hero (Igual ao print kugh.png) */
+.hero-section {
+  background-color: #0a192f; /* Azul escuro idêntico */
+  color: #ffffff;
+  padding: 8rem 4rem 6rem 4rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4rem;
+  text-align: left;
+}
+
+/* Cards de Tipos de Auxílio (Igual ao print ddf.png) */
+.auxilio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  padding: 2rem 4rem;
+}
+
+.card-auxilio {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  text-align: left;
+}
+
+/* Estilização dos Formulários (Igual ao print Sem títhhulo.png) */
+.form-container {
+  background: white;
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 3rem;
+  border-radius: 16px;
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+  text-align: left;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1.2rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+input, select, textarea {
+  padding: 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 1rem;
+  margin-top: 0.5rem;
+}
+
+.checkbox-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 1rem;
 }
