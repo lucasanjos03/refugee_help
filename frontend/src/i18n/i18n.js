@@ -4,44 +4,119 @@ import { initReactI18next } from 'react-i18next';
 const resources = {
   pt: {
     translation: {
-      welcome: "Conectando Esperança à Assistência Global",
-      subtitle: "Uma plataforma segura para apoiar refugiados e conectar organizações humanitárias em todo o mundo.",
-      btnRefugee: "Buscar Ajuda (Sou Refugiado)",
-      btnOng: "Quero Ajudar (Cadastrar ONG)",
+      // Nav & Hero
+      welcome: "Uma ponte para um novo começo",
+      subtitle: "Conectamos refugiados a organizações que oferecem suporte em saúde, assistência jurídica, abrigo e serviços sociais. Encontre ajuda ou ofereça seus serviços.",
+      btnRefugee: "Sou Refugiado →",
+      btnOng: "Sou uma Organização",
       btnAdmin: "Painel Admin",
       statsTitle: "Impacto da Plataforma",
-      satisfaction: "Satisfação",
-      respTime: "Tempo de Resposta",
-      cost: "Custo",
-      languages: "Idiomas"
+      satisfaction: "Taxa de satisfação",
+      respTime: "Tempo médio de resposta",
+      cost: "Gratuito",
+      languages: "Idiomas suportados",
+      
+      // Seções e Serviços
+      servicesTitle: "Nossos Serviços",
+      servicesSubtitle: "Tipos de auxílio disponíveis",
+      active: "Ativo",
+      serviceDesc: "Acesso a suporte especializado e atendimento humanitário imediato para você e seus familiares.",
+      
+      // Formulários
+      portalRefugee: "Portal do Refugiado",
+      formTitle: "Formulário de Cadastro",
+      formSubtitle: "Preencha todas as informações para que possamos ajudá-lo melhor.",
+      fullName: "Nome Completo *",
+      nationality: "Nacionalidade *",
+      birthDate: "Data de Nascimento *",
+      gender: "Gênero",
+      docId: "Número de Documento de Identificação *",
+      famMembers: "Número de Familiares",
+      phone: "Número de Telefone",
+      streetSituation: "Sim, estou em situação de rua",
+      streetLabel: "Situação de rua?",
+      state: "Estado",
+      city: "Cidade",
+      address: "Endereço Completo",
+      needsTitle: "Necessidades Críticas (Marque todas que precisa):",
+      situationDesc: "Descreva sua Situação Atual",
+      btnSubmitRefugee: "Enviar Cadastro de Refugiado"
     }
   },
   en: {
     translation: {
-      welcome: "Connecting Hope to Global Assistance",
-      subtitle: "A secure platform to support refugees and connect humanitarian organizations worldwide.",
-      btnRefugee: "Seek Help (I am a Refugee)",
-      btnOng: "Want to Help (Register NGO)",
+      welcome: "A bridge to a new beginning",
+      subtitle: "We connect refugees with organizations providing health, legal, shelter, and social services support. Find help or offer your services.",
+      btnRefugee: "I am a Refugee →",
+      btnOng: "I am an Organization",
       btnAdmin: "Admin Panel",
       statsTitle: "Platform Impact",
-      satisfaction: "Satisfaction",
-      respTime: "Response Time",
-      cost: "Cost",
-      languages: "Languages"
+      satisfaction: "Satisfaction rate",
+      respTime: "Average response time",
+      cost: "Free of charge",
+      languages: "Supported languages",
+      
+      servicesTitle: "Our Services",
+      servicesSubtitle: "Available types of aid",
+      active: "Active",
+      serviceDesc: "Access to specialized support and immediate humanitarian assistance for you and your family.",
+      
+      portalRefugee: "Refugee Portal",
+      formTitle: "Registration Form",
+      formSubtitle: "Fill in all the information so we can better assist you.",
+      fullName: "Full Name *",
+      nationality: "Nationality *",
+      birthDate: "Date of Birth *",
+      gender: "Gender",
+      docId: "Identification Document Number *",
+      famMembers: "Number of Family Members",
+      phone: "Phone Number",
+      streetSituation: "Yes, I am experiencing homelessness",
+      streetLabel: "Homeless?",
+      state: "State",
+      city: "City",
+      address: "Full Address",
+      needsTitle: "Critical Needs (Check all that apply):",
+      situationDesc: "Describe your Current Situation",
+      btnSubmitRefugee: "Submit Refugee Registration"
     }
   },
   es: {
     translation: {
-      welcome: "Conectando Esperanza con la Asistencia Global",
-      subtitle: "Una plataforma segura para apoyar a los refugiados y conectar organizações humanitarias en todo el mundo.",
-      btnRefugee: "Buscar Ayuda (Soy Refugiado)",
-      btnOng: "Quiero Ayjudar (Registrar ONG)",
+      welcome: "Un puente hacia un nuevo comienzo",
+      subtitle: "Conectamos a refugiados con organizaciones que ofrecen apoyo en salud, asistencia jurídica, vivienda y servicios sociales. Encuentre ayuda u ofrezca sus servicios.",
+      btnRefugee: "Soy Refugiado →",
+      btnOng: "Soy una Organización",
       btnAdmin: "Panel de Admin",
       statsTitle: "Impacto de la Plataforma",
-      satisfaction: "Satisfacción",
-      respTime: "Tiempo de Respuesta",
-      cost: "Costo",
-      languages: "Idiomas"
+      satisfaction: "Tasa de satisfacción",
+      respTime: "Tiempo promedio de respuesta",
+      cost: "Gratuito",
+      languages: "Idiomas soportados",
+      
+      servicesTitle: "Nuestros Servicios",
+      servicesSubtitle: "Tipos de ayuda disponibles",
+      active: "Activo",
+      serviceDesc: "Acceso a apoyo especializado y atención humanitaria inmediata para usted y su familia.",
+      
+      portalRefugee: "Portal del Refugiado",
+      formTitle: "Formulario de Registro",
+      formSubtitle: "Complete toda la información para que podamos ayudarle mejor.",
+      fullName: "Nombre Completo *",
+      nationality: "Nacionalidad *",
+      birthDate: "Fecha de Nacimiento *",
+      gender: "Género",
+      docId: "Número de Documento de Identificación *",
+      famMembers: "Número de Familiares",
+      phone: "Número de Teléfono",
+      streetSituation: "Sí, me encuentro en situación de calle",
+      streetLabel: "¿Situación de calle?",
+      state: "Estado",
+      city: "Ciudad",
+      address: "Dirección Completa",
+      needsTitle: "Necesidades Críticas (Marque todas las que necesite):",
+      situationDesc: "Describa su Situación Actual",
+      btnSubmitRefugee: "Enviar Registro de Refugiado"
     }
   }
 };
@@ -50,7 +125,7 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: 'pt', // idioma padrão inicial
+    lng: 'pt',
     interpolation: {
       escapeValue: false
     }
