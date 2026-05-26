@@ -4,7 +4,15 @@ import { initReactI18next } from 'react-i18next';
 const resources = {
   pt: {
     translation: {
-      // Nav & Hero
+      // Nav
+      navHome: "Início",
+      navServices: "Serviços",
+      navRefugees: "Para Refugiados",
+      navOngs: "Organizações",
+      navSearch: "Buscar Ajuda",
+      btnHelp: "Preciso de Ajuda",
+      
+      // Hero & Geral (Mantidos)
       welcome: "Uma ponte para um novo começo",
       subtitle: "Conectamos refugiados a organizações que oferecem suporte em saúde, assistência jurídica, abrigo e serviços sociais. Encontre ajuda ou ofereça seus serviços.",
       btnRefugee: "Sou Refugiado →",
@@ -45,6 +53,13 @@ const resources = {
   },
   en: {
     translation: {
+      navHome: "Home",
+      navServices: "Services",
+      navRefugees: "For Refugees",
+      navOngs: "Organizations",
+      navSearch: "Find Help",
+      btnHelp: "I Need Help",
+      
       welcome: "A bridge to a new beginning",
       subtitle: "We connect refugees with organizations providing health, legal, shelter, and social services support. Find help or offer your services.",
       btnRefugee: "I am a Refugee →",
@@ -83,6 +98,13 @@ const resources = {
   },
   es: {
     translation: {
+      navHome: "Inicio",
+      navServices: "Servicios",
+      navRefugees: "Para Refugiados",
+      navOngs: "Organizaciones",
+      navSearch: "Buscar Ayuda",
+      btnHelp: "Necesito Ayuda",
+      
       welcome: "Un puente hacia un nuevo comienzo",
       subtitle: "Conectamos a refugiados con organizaciones que ofrecen apoyo en salud, asistencia jurídica, vivienda y servicios sociales. Encuentre ayuda u ofrezca sus servicios.",
       btnRefugee: "Soy Refugiado →",

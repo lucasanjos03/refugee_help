@@ -2,15 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 
-function Home({ navegarParaAdmin }) {
+function Home({ navegarParaAdmin, navegarParaOng }) {
   const { t, i18n } = useTranslation();
   const [stats, setStats] = useState(null);
   
-  // Controle de Telas (Segurança/Fluxo)
-  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  // Controle de Modais de Login
+  const [showLogin, setShowLogin] = useState(false);
+  const [loginType, setLoginType] = useState('admin'); // 'admin' ou 'ong'
   const [credentials, setCredentials] = useState({ email: '', password: '' });
 
-  // Estados do Formulário do Refugiado
+  // Estados dos Formulários
   const [refugiadoForm, setRefugiadoForm] = useState({
     nomeCompleto: '', nacionalidade: '', dataNascimento: '', genero: 'Masculino',
     documentoIdentificacao: '', numeroFamiliares: 0, telefone: '', situacaoRua: false,
@@ -22,7 +23,6 @@ function Home({ navegarParaAdmin }) {
     'Assistência Jurídica': false, Alimentação: false, Educação: false, Documentação: false
   });
 
-  // Estados do Formulário da ONG (Recuperado)
   const [ongForm, setOngForm] = useState({
     razaoSocial: '', nomeFantasia: '', cnpj: '', tipoOrganizacao: 'ONG', descricao: '',
     horarioFuncionamento: '', telefone: '', email: '', website: '', idiomasAtendimento: '',
@@ -44,15 +44,23 @@ function Home({ navegarParaAdmin }) {
     i18n.changeLanguage(event.target.value);
   };
 
-  // Login corrigido para redirecionar imediatamente
   const handleLoginSubmit = (e) => {
     e.preventDefault();
-    if (credentials.email === 'admin@arhelp.org' && credentials.password === '123456') {
-      setShowAdminLogin(false);
-      alert('Autenticado com sucesso! Redirecionando para o Painel...');
-      navegarParaAdmin(); // Executa o redirecionamento vindo do App.jsx
+    if (loginType === 'admin') {
+      if (credentials.email === 'admin@arhelp.org' && credentials.password === '123456') {
+        setShowLogin(false);
+        navegarParaAdmin();
+      } else {
+        alert('Credenciais de Admin inválidas!');
+      }
     } else {
-      alert('Credenciais inválidas! Tente novamente.');
+      // Login Simulando a ONG parceira
+      if (credentials.email === 'ong@ajuda.org' && credentials.password === '123456') {
+        setShowLogin(false);
+        navegarParaOng();
+      } else {
+        alert('Credenciais de Organização inválidas!');
+      }
     }
   };
 
@@ -85,19 +93,19 @@ function Home({ navegarParaAdmin }) {
   return (
     <div style={{ paddingTop: '70px' }}>
       
-      {/* HEADER COMPLETO */}
+      {/* HEADER TOTALMENTE TRADUZIDO E RESPONSIVO */}
       <nav className="header">
         <div style={{ fontWeight: 'bold', fontSize: '1.4rem', color: '#3b82f6' }}>🕊️ AR Help</div>
         
         <div className="nav-links">
-          <a href="#inicio">Início</a>
-          <a href="#servicos">Serviços</a>
-          <a href="#refugiados">Para Refugiados</a>
-          <a href="#organizacoes">Organizações</a>
-          <a href="#busca">Buscar Ajuda</a>
+          <a href="#inicio">{t('navHome')}</a>
+          <a href="#servicos">{t('navServices')}</a>
+          <a href="#refugiados">{t('navRefugees')}</a>
+          <a href="#organizacoes">{t('navOngs')}</a>
+          <a href="#busca">{t('navSearch')}</a>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
           <select onChange={alterarIdioma} defaultValue={i18n.language} style={{ padding: '0.4rem', width: 'auto' }}>
             <option value="pt">PT</option>
             <option value="en">EN</option>
@@ -105,39 +113,44 @@ function Home({ navegarParaAdmin }) {
           </select>
 
           <button 
-            onClick={() => setShowAdminLogin(true)}
+            onClick={() => { setLoginType('ong'); setShowLogin(true); }}
+            style={{ backgroundColor: 'transparent', border: '1px solid #10b981', color: '#10b981', padding: '0.5rem 1rem', borderRadius: '6px' }}
+          >
+            🏢 Login ONG
+          </button>
+
+          <button 
+            onClick={() => { setLoginType('admin'); setShowLogin(true); }}
             style={{ backgroundColor: 'transparent', border: '1px solid #3b82f6', color: '#3b82f6', padding: '0.5rem 1rem', borderRadius: '6px' }}
           >
             {t('btnAdmin')}
           </button>
-
-          <a href="#busca">
-            <button style={{ backgroundColor: '#3b82f6', color: 'white', border: 'none', padding: '0.5rem 1.2rem', borderRadius: '6px' }}>
-              Preciso de Ajuda
-            </button>
-          </a>
         </div>
       </nav>
 
-      {/* MODAL DE AUTENTICAÇÃO DO ADMIN */}
-      {showAdminLogin && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000 }}>
+      {/* MODAL DE LOGIN UNIFICADO (ADMIN / ONG) */}
+      {showLogin && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000, padding: '1rem' }}>
           <div className="form-container" style={{ width: '100%', maxWidth: '400px', position: 'relative' }}>
-            <button onClick={() => setShowAdminLogin(false)} style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', fontSize: '1.2rem' }}>✕</button>
-            <h3 style={{ marginBottom: '1rem', textAlign: 'center' }}>Acesso Restrito</h3>
-            <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1.5rem', textAlign: 'center' }}>Faça login para gerenciar dados humanitários de forma segura.</p>
+            <button onClick={() => setShowLogin(false)} style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', fontSize: '1.2rem' }}>✕</button>
+            <h3 style={{ marginBottom: '1rem', textAlign: 'center' }}>
+              {loginType === 'admin' ? "🛡️ Painel Administrativo" : "🏢 Acesso Organização"}
+            </h3>
+            <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1.5rem', textAlign: 'center' }}>
+              {loginType === 'admin' ? "Acesso restrito para auditoria global." : "Faça login para ver e contactar refugiados associados."}
+            </p>
             
             <form onSubmit={handleLoginSubmit}>
               <div className="form-group" style={{ marginBottom: '1rem' }}>
-                <label>E-mail Corporativo</label>
-                <input type="email" placeholder="admin@arhelp.org" required onChange={e => setCredentials({...credentials, email: e.target.value})} />
+                <label>E-mail de Acesso</label>
+                <input type="email" placeholder={loginType === 'admin' ? "admin@arhelp.org" : "ong@ajuda.org"} required onChange={e => setCredentials({...credentials, email: e.target.value})} />
               </div>
               <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                <label>Senha de Acesso</label>
+                <label>Senha</label>
                 <input type="password" placeholder="••••••" required onChange={e => setCredentials({...credentials, password: e.target.value})} />
               </div>
-              <button type="submit" style={{ backgroundColor: '#3b82f6', color: 'white', width: '100%', padding: '0.8rem', border: 'none', borderRadius: '8px' }}>
-                Autenticar no Sistema
+              <button type="submit" style={{ backgroundColor: loginType === 'admin' ? '#3b82f6' : '#10b981', color: 'white', width: '100%', padding: '0.8rem', border: 'none', borderRadius: '8px' }}>
+                Entrar no Sistema
               </button>
             </form>
           </div>
@@ -147,18 +160,18 @@ function Home({ navegarParaAdmin }) {
       {/* SEÇÃO 1: HERO */}
       <section id="inicio" className="hero-section">
         <div className="container hero-grid">
-          <div style={{ maxWidth: '55%', textAlign: 'left' }}>
+          <div style={{ textAlign: 'left' }}>
             <span style={{ background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', padding: '0.4rem 1rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold' }}>🕊️ Plataforma Humanitária</span>
             <h1 style={{ fontSize: '3rem', margin: '1rem 0', lineHeight: '1.2', fontWeight: 800 }}>{t('welcome')}</h1>
             <p style={{ color: '#94a3b8', fontSize: '1.05rem', marginBottom: '2rem', lineHeight: '1.6' }}>{t('subtitle')}</p>
-            <div>
-              <a href="#refugiados"><button style={{ backgroundColor: '#3b82f6', color: 'white', border: 'none', padding: '0.8rem 1.8rem', borderRadius: '8px', marginRight: '1rem' }}>{t('btnRefugee')}</button></a>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <a href="#refugiados"><button style={{ backgroundColor: '#3b82f6', color: 'white', border: 'none', padding: '0.8rem 1.8rem', borderRadius: '8px' }}>{t('btnRefugee')}</button></a>
               <a href="#organizacoes"><button style={{ backgroundColor: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.3)', padding: '0.8rem 1.8rem', borderRadius: '8px' }}>{t('btnOng')}</button></a>
             </div>
           </div>
 
           {/* Estatísticas */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', width: '45%' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', width: '100%' }}>
             <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.8rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)' }}>
               <h2 style={{ color: '#3b82f6', fontSize: '2rem' }}>{stats ? stats.tempoResposta : '24h'}</h2>
               <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: '0.5rem' }}>{t('respTime')}</p>
@@ -274,7 +287,7 @@ function Home({ navegarParaAdmin }) {
         </div>
       </section>
 
-      {/* SEÇÃO 4: CADASTRO DE ORGANIZAÇÃO (RECUPERADO COMPLETO) */}
+      {/* SEÇÃO 4: CADASTRO DE ORGANIZAÇÃO */}
       <section id="organizacoes" style={{ padding: '5rem 0', background: '#ffffff' }}>
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
@@ -339,17 +352,6 @@ function Home({ navegarParaAdmin }) {
                 </div>
               </div>
 
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>Cidade *</label>
-                  <input type="text" required onChange={e => setOngForm({...ongForm, cidade: e.target.value})} />
-                </div>
-                <div className="form-group">
-                  <label>Endereço Completo *</label>
-                  <input type="text" placeholder="Rua, número, bairro" required onChange={e => setOngForm({...ongForm, enderecoCompleto: e.target.value})} />
-                </div>
-              </div>
-
               <button type="submit" style={{ backgroundColor: '#10b981', color: 'white', border: 'none', padding: '0.9rem', borderRadius: '8px', width: '100%', marginTop: '1.5rem' }}>
                 Cadastrar Organização Parceira
               </button>
@@ -369,13 +371,13 @@ function Home({ navegarParaAdmin }) {
         </div>
       </section>
 
-      {/* FOOTER TOTALMENTE CENTRALIZADO */}
+      {/* FOOTER */}
       <footer id="contato" style={{ background: 'var(--bg-primary)', color: '#94a3b8', padding: '4rem 0 2rem 0' }}>
         <div className="container">
           <div className="footer-container">
             <div>
               <h4 style={{ color: 'white', marginBottom: '1rem' }}>🕊️ AR Help</h4>
-              <p style={{ fontSize: '0.9rem', maxWidth: '300px', lineHeight: '1.5' }}>Conectando pessoas refugiadas a redes de suporte humanitário no Brasil.</p>
+              <p style={{ fontSize: '0.9rem', maxWidth: '300px', lineHeight: '1.5' }}>Conectando pessoas refugiadas a redes de suporte humanitário globais.</p>
             </div>
             <div>
               <h4 style={{ color: 'white', marginBottom: '1rem' }}>Serviços</h4>
