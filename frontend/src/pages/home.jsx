@@ -2,16 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 
-function Home() {
+function Home({ navegarParaAdmin }) {
   const { t, i18n } = useTranslation();
   const [stats, setStats] = useState(null);
   
   // Controle de Telas (Segurança/Fluxo)
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [credentials, setCredentials] = useState({ email: '', password: '' });
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
 
-  // Estados dos Formulários
+  // Estados do Formulário do Refugiado
   const [refugiadoForm, setRefugiadoForm] = useState({
     nomeCompleto: '', nacionalidade: '', dataNascimento: '', genero: 'Masculino',
     documentoIdentificacao: '', numeroFamiliares: 0, telefone: '', situacaoRua: false,
@@ -23,6 +22,7 @@ function Home() {
     'Assistência Jurídica': false, Alimentação: false, Educação: false, Documentação: false
   });
 
+  // Estados do Formulário da ONG (Recuperado)
   const [ongForm, setOngForm] = useState({
     razaoSocial: '', nomeFantasia: '', cnpj: '', tipoOrganizacao: 'ONG', descricao: '',
     horarioFuncionamento: '', telefone: '', email: '', website: '', idiomasAtendimento: '',
@@ -44,13 +44,13 @@ function Home() {
     i18n.changeLanguage(event.target.value);
   };
 
-  // Simulação de login - que depois integrará com o Bearer Token do Spring JWT
+  // Login corrigido para redirecionar imediatamente
   const handleLoginSubmit = (e) => {
     e.preventDefault();
     if (credentials.email === 'admin@arhelp.org' && credentials.password === '123456') {
-      setIsAdminAuthenticated(true);
       setShowAdminLogin(false);
-      alert('Autenticado com sucesso no Painel de Controle!');
+      alert('Autenticado com sucesso! Redirecionando para o Painel...');
+      navegarParaAdmin(); // Executa o redirecionamento vindo do App.jsx
     } else {
       alert('Credenciais inválidas! Tente novamente.');
     }
@@ -85,7 +85,7 @@ function Home() {
   return (
     <div style={{ paddingTop: '70px' }}>
       
-      {/* HEADER COMPLETO E CORRIGIDO */}
+      {/* HEADER COMPLETO */}
       <nav className="header">
         <div style={{ fontWeight: 'bold', fontSize: '1.4rem', color: '#3b82f6' }}>🕊️ AR Help</div>
         
@@ -104,12 +104,11 @@ function Home() {
             <option value="es">ES</option>
           </select>
 
-          {/* Botão Admin posicionado no local correto do cabeçalho */}
           <button 
-            onClick={() => isAdminAuthenticated ? alert('Você já está no Painel!') : setShowAdminLogin(true)}
+            onClick={() => setShowAdminLogin(true)}
             style={{ backgroundColor: 'transparent', border: '1px solid #3b82f6', color: '#3b82f6', padding: '0.5rem 1rem', borderRadius: '6px' }}
           >
-            {isAdminAuthenticated ? "🛡️ Dashboard" : t('btnAdmin')}
+            {t('btnAdmin')}
           </button>
 
           <a href="#busca">
@@ -145,7 +144,7 @@ function Home() {
         </div>
       )}
 
-      {/* SEÇÃO 1: HERO (CONTEÚDO CENTRALIZADO) */}
+      {/* SEÇÃO 1: HERO */}
       <section id="inicio" className="hero-section">
         <div className="container hero-grid">
           <div style={{ maxWidth: '55%', textAlign: 'left' }}>
@@ -158,9 +157,8 @@ function Home() {
             </div>
           </div>
 
-          {/* Grid de Estatísticas */}
+          {/* Estatísticas */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', width: '45%' }}>
-            {/* Cards */}
             <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.8rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)' }}>
               <h2 style={{ color: '#3b82f6', fontSize: '2rem' }}>{stats ? stats.tempoResposta : '24h'}</h2>
               <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: '0.5rem' }}>{t('respTime')}</p>
@@ -181,7 +179,7 @@ function Home() {
         </div>
       </section>
 
-      {/* SEÇÃO 2: SERVIÇOS (CENTRALIZADO) */}
+      {/* SEÇÃO 2: SERVIÇOS */}
       <section id="servicos" style={{ padding: '5rem 0' }}>
         <div className="container" style={{ textAlign: 'center' }}>
           <span style={{ color: '#3b82f6', fontWeight: '700', textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '1px' }}>{t('servicesTitle')}</span>
@@ -276,11 +274,98 @@ function Home() {
         </div>
       </section>
 
-      {/* OUTRAS SEÇÕES EXEMPLIFICADAS COM .CONTAINER */}
+      {/* SEÇÃO 4: CADASTRO DE ORGANIZAÇÃO (RECUPERADO COMPLETO) */}
       <section id="organizacoes" style={{ padding: '5rem 0', background: '#ffffff' }}>
-        <div className="container" style={{ textAlign: 'center' }}>
-          <h2 style={{ fontSize: '2.2rem', fontWeight: '800', marginBottom: '2.5rem' }}>Portal das Organizações</h2>
-          {/* O formulário de ONGs herdará os mesmos estilos visuais refinados automaticamente */}
+        <div className="container">
+          <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+            <h2 style={{ fontSize: '2.2rem', fontWeight: '800' }}>Portal das Organizações</h2>
+            <p style={{ color: 'var(--text-muted)' }}>Cadastre sua instituição para disponibilizar auxílio humanitário na plataforma.</p>
+          </div>
+
+          <div className="form-container" style={{ border: '1px solid var(--border-color)' }}>
+            <form onSubmit={handleOngSubmit}>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label>Razão Social *</label>
+                  <input type="text" required onChange={e => setOngForm({...ongForm, razaoSocial: e.target.value})} />
+                </div>
+                <div className="form-group">
+                  <label>Nome Fantasia *</label>
+                  <input type="text" required onChange={e => setOngForm({...ongForm, nomeFantasia: e.target.value})} />
+                </div>
+              </div>
+
+              <div className="form-grid">
+                <div className="form-group">
+                  <label>CNPJ *</label>
+                  <input type="text" placeholder="00.000.000/0000-00" required onChange={e => setOngForm({...ongForm, cnpj: e.target.value})} />
+                </div>
+                <div className="form-group">
+                  <label>Tipo de Organização</label>
+                  <select onChange={e => setOngForm({...ongForm, tipoOrganizacao: e.target.value})}>
+                    <option value="ONG">ONG</option>
+                    <option value="Fundação">Fundação</option>
+                    <option value="Instituição Religiosa">Instituição Religiosa</option>
+                    <option value="Associação">Associação</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Descrição das Atividades</label>
+                <textarea rows="3" placeholder="Fale um pouco sobre a missão da sua instituição..." onChange={e => setOngForm({...ongForm, descricao: e.target.value})}></textarea>
+              </div>
+
+              <div className="form-group" style={{ marginTop: '1.5rem' }}>
+                <label>Serviços que sua instituição pode oferecer:</label>
+                <div className="checkbox-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  {Object.keys(servicosOferecidos).map((serv) => (
+                    <label key={serv} style={{ fontWeight: 'normal', display: 'flex', alignItems: 'center' }}>
+                      <input type="checkbox" checked={servicosOferecidos[serv]} 
+                        onChange={e => setServicosOferecidos({...servicosOferecidos, [serv]: e.target.checked})} style={{ width: 'auto', marginRight: '8px' }} /> {serv}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="form-grid" style={{ marginTop: '1.5rem' }}>
+                <div className="form-group">
+                  <label>Telefone de Contato *</label>
+                  <input type="tel" required onChange={e => setOngForm({...ongForm, telefone: e.target.value})} />
+                </div>
+                <div className="form-group">
+                  <label>E-mail Institucional *</label>
+                  <input type="email" required onChange={e => setOngForm({...ongForm, email: e.target.value})} />
+                </div>
+              </div>
+
+              <div className="form-grid">
+                <div className="form-group">
+                  <label>Cidade *</label>
+                  <input type="text" required onChange={e => setOngForm({...ongForm, cidade: e.target.value})} />
+                </div>
+                <div className="form-group">
+                  <label>Endereço Completo *</label>
+                  <input type="text" placeholder="Rua, número, bairro" required onChange={e => setOngForm({...ongForm, enderecoCompleto: e.target.value})} />
+                </div>
+              </div>
+
+              <button type="submit" style={{ backgroundColor: '#10b981', color: 'white', border: 'none', padding: '0.9rem', borderRadius: '8px', width: '100%', marginTop: '1.5rem' }}>
+                Cadastrar Organização Parceira
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      {/* SEÇÃO 5: BUSCA DINÂMICA */}
+      <section id="busca" style={{ padding: '5rem 0', background: '#f8fafc', textAlign: 'center' }}>
+        <div className="container">
+          <h2>Busca Dinâmica de Instituições</h2>
+          <p style={{ color: '#64748b' }}>Encontre rapidamente os pontos de apoio mais próximos e ativos filtrados por serviço.</p>
+          <div style={{ maxWidth: '600px', margin: '2rem auto' }}>
+            <input type="text" placeholder="🔍 Digite uma cidade ou serviço (Ex: Abrigo)..." style={{ width: '100%', padding: '1rem' }} />
+          </div>
         </div>
       </section>
 
@@ -290,7 +375,7 @@ function Home() {
           <div className="footer-container">
             <div>
               <h4 style={{ color: 'white', marginBottom: '1rem' }}>🕊️ AR Help</h4>
-              <p style={{ fontSize: '0.9rem', maxWidth: '300px', lineHeight: '1.5' }}>Conectando pessoas refugiadas a redes de suporte humanitário globais.</p>
+              <p style={{ fontSize: '0.9rem', maxWidth: '300px', lineHeight: '1.5' }}>Conectando pessoas refugiadas a redes de suporte humanitário no Brasil.</p>
             </div>
             <div>
               <h4 style={{ color: 'white', marginBottom: '1rem' }}>Serviços</h4>
@@ -304,7 +389,7 @@ function Home() {
             </div>
           </div>
           <p style={{ marginTop: '2rem', textAlign: 'center', fontSize: '0.8rem', color: '#64748b' }}>
-            © 2026 AR Help. Todos os direitos reservados.
+            © 2026 AR Help. Todos os direitos reservados. 
           </p>
         </div>
       </footer>
