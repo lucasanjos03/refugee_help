@@ -1,26 +1,20 @@
 import React, { useState } from 'react';
 import Home from './pages/home';
-import AdminDashboard from './pages/AdminDashboard';
+import AdminDashboard from './pages/AdminDashboard'; // ou a pasta correta dele
 
 function App() {
   const [telaAtual, setTelaAtual] = useState('home');
 
   return (
     <div className="App">
+      {/* Se a tela atual for 'home', renderiza apenas a Home e passa a função de mudar de tela */}
       {telaAtual === 'home' && (
-        <>
-          {/* Adicionamos uma ação no botão Admin da Home para abrir o Painel */}
-          <Home />
-          <div style={{ marginTop: '-4rem', marginBottom: '4rem' }}>
-            <button onClick={() => setTelaAtual('admin')} style={{ backgroundColor: '#4b5563' }}>
-              Ir para o Painel Admin →
-            </button>
-          </div>
-        </>
+        <Home navegarParaAdmin={() => setTelaAtual('admin')} />
       )}
 
+      {/* Se a tela atual for 'admin', renderiza o Painel de Controle */}
       {telaAtual === 'admin' && (
-        <AdminDashboard />
+        <AdminDashboard navegarParaHome={() => setTelaAtual('home')} />
       )}
     </div>
   );
