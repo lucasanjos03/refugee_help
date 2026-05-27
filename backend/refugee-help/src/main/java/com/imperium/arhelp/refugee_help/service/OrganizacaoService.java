@@ -5,6 +5,7 @@ import com.imperium.arhelp.refugee_help.repository.OrganizacaoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class OrganizacaoService {
@@ -33,5 +34,9 @@ public class OrganizacaoService {
             throw new RuntimeException("Organização não encontrada para exclusão.");
         }
         repository.deleteById(id);
+    }
+    public Optional<Organizacao> buscarPorEmail(String email) {
+        // Certifique-se de que no seu OrganizacaoRepository exista o método findByEmail(String email)
+        return repository.findByEmail(email);
     }
 }

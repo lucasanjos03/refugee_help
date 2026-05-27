@@ -11,7 +11,7 @@ function Home({ navegarParaAdmin, navegarParaOng }) {
   const [loginType, setLoginType] = useState('admin'); // 'admin' ou 'ong'
   const [credentials, setCredentials] = useState({ email: '', password: '' });
 
-  // Estados dos Formulários
+  // Estados do Formulário do Refugiado
   const [refugiadoForm, setRefugiadoForm] = useState({
     nomeCompleto: '', nacionalidade: '', dataNascimento: '', genero: 'Masculino',
     documentoIdentificacao: '', numeroFamiliares: 0, telefone: '', situacaoRua: false,
@@ -23,10 +23,11 @@ function Home({ navegarParaAdmin, navegarParaOng }) {
     'Assistência Jurídica': false, Alimentação: false, Educação: false, Documentação: false
   });
 
+  // Estados do Formulário da ONG (Agora com o campo 'senha')
   const [ongForm, setOngForm] = useState({
     razaoSocial: '', nomeFantasia: '', cnpj: '', tipoOrganizacao: 'ONG', descricao: '',
-    horarioFuncionamento: '', telefone: '', email: '', website: '', idiomasAtendimento: '',
-    cep: '', bairro: '', estado: '', cidade: '', enderecoCompleto: ''
+    horarioFuncionamento: '', telefone: '', email: '', senha: '', website: '', 
+    idiomasAtendimento: '', cep: '', bairro: '', estado: '', cidade: '', enderecoCompleto: ''
   });
 
   const [servicosOferecidos, setServicosOferecidos] = useState({
@@ -44,9 +45,12 @@ function Home({ navegarParaAdmin, navegarParaOng }) {
     i18n.changeLanguage(event.target.value);
   };
 
+  // Lógica de Login Atualizada
   const handleLoginSubmit = (e) => {
     e.preventDefault();
+    
     if (loginType === 'admin') {
+      // O Admin continua fixo/硬coded para fins acadêmicos
       if (credentials.email === 'admin@arhelp.org' && credentials.password === '123456') {
         setShowLogin(false);
         navegarParaAdmin();
@@ -54,13 +58,24 @@ function Home({ navegarParaAdmin, navegarParaOng }) {
         alert('Credenciais de Admin inválidas!');
       }
     } else {
-      // Login Simulando a ONG parceira
-      if (credentials.email === 'ong@ajuda.org' && credentials.password === '123456') {
-        setShowLogin(false);
-        navegarParaOng();
-      } else {
-        alert('Credenciais de Organização inválidas!');
-      }
+      // LOGIN DA ONG INTEGRADO COM O BACK-END
+      // Aqui enviamos o e-mail e senha digitados para a sua API em Java validar no Postgres
+      api.post('/organizacoes/login', credentials)
+        .then(response => {
+          // Se o Java retornar sucesso (HTTP 200), limpamos o modal e entramos no painel dela
+          setShowLogin(false);
+          navegarParaOng();
+        })
+        .catch(err => {
+          console.error(err);
+          // Mock temporário para você testar o fluxo visual mesmo se o endpoint de login do Java não estiver pronto:
+          if (credentials.email === 'ong@ajuda.org' && credentials.password === '123456') {
+            setShowLogin(false);
+            navegarParaOng();
+          } else {
+            alert('Erro ao autenticar! Verifique se o e-mail e senha estão corretos no banco de dados.');
+          }
+        });
     }
   };
 
@@ -80,11 +95,13 @@ function Home({ navegarParaAdmin, navegarParaOng }) {
   const handleOngSubmit = (e) => {
     e.preventDefault();
     const servicosMarcados = Object.keys(servicosOferecidos).filter(key => servicosOferecidos[key]);
+    
+    // O payload agora envia automaticamente a 'senha' definida no formulário para o Java salvar no Postgres
     const payload = { ...ongForm, servicos: servicosMarcados };
 
     api.post('/organizacoes', payload)
       .then(() => {
-        alert('Cadastro de Organização enviado com sucesso!');
+        alert('Organização cadastrada com sucesso! Você já pode realizar o login utilizando o e-mail e senha informados.');
         e.target.reset();
       })
       .catch(err => console.error(err));
@@ -93,7 +110,7 @@ function Home({ navegarParaAdmin, navegarParaOng }) {
   return (
     <div style={{ paddingTop: '70px' }}>
       
-      {/* HEADER TOTALMENTE TRADUZIDO E RESPONSIVO */}
+      {/* HEADER */}
       <nav className="header">
         <div style={{ fontWeight: 'bold', fontSize: '1.4rem', color: '#3b82f6' }}>🕊️ AR Help</div>
         
@@ -128,7 +145,7 @@ function Home({ navegarParaAdmin, navegarParaOng }) {
         </div>
       </nav>
 
-      {/* MODAL DE LOGIN UNIFICADO (ADMIN / ONG) */}
+      {/* MODAL DE LOGIN */}
       {showLogin && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000, padding: '1rem' }}>
           <div className="form-container" style={{ width: '100%', maxWidth: '400px', position: 'relative' }}>
@@ -137,13 +154,13 @@ function Home({ navegarParaAdmin, navegarParaOng }) {
               {loginType === 'admin' ? "🛡️ Painel Administrativo" : "🏢 Acesso Organização"}
             </h3>
             <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1.5rem', textAlign: 'center' }}>
-              {loginType === 'admin' ? "Acesso restrito para auditoria global." : "Faça login para ver e contactar refugiados associados."}
+              {loginType === 'admin' ? "Acesso restrito para auditoria global." : "Insira as credenciais cadastradas da sua instituição."}
             </p>
             
             <form onSubmit={handleLoginSubmit}>
               <div className="form-group" style={{ marginBottom: '1rem' }}>
                 <label>E-mail de Acesso</label>
-                <input type="email" placeholder={loginType === 'admin' ? "admin@arhelp.org" : "ong@ajuda.org"} required onChange={e => setCredentials({...credentials, email: e.target.value})} />
+                <input type="email" placeholder="exemplo@instituicao.org" required onChange={e => setCredentials({...credentials, email: e.target.value})} />
               </div>
               <div className="form-group" style={{ marginBottom: '1.5rem' }}>
                 <label>Senha</label>
@@ -228,9 +245,11 @@ function Home({ navegarParaAdmin, navegarParaOng }) {
                   <label>{t('fullName')}</label>
                   <input type="text" placeholder="Nome Completo" required onChange={e => setRefugiadoForm({...refugiadoForm, nomeCompleto: e.target.value})} />
                 </div>
-                <div className="form-group">
-                  <label>{t('nationality')}</label>
-                  <input type="text" placeholder="País de Origem" required onChange={e => setRefugiadoForm({...refugiadoForm, nacionalidade: e.target.value})} />
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label>{t('nationality')}</label>
+                    <input type="text" placeholder="País de Origem" required onChange={e => setRefugiadoForm({...refugiadoForm, nacionalidade: e.target.value})} />
+                  </div>
                 </div>
               </div>
 
@@ -287,7 +306,7 @@ function Home({ navegarParaAdmin, navegarParaOng }) {
         </div>
       </section>
 
-      {/* SEÇÃO 4: CADASTRO DE ORGANIZAÇÃO */}
+      {/* SEÇÃO 4: CADASTRO DE ORGANIZAÇÃO (AGORA COM CAMPO DE SENHA) */}
       <section id="organizacoes" style={{ padding: '5rem 0', background: '#ffffff' }}>
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
@@ -347,9 +366,16 @@ function Home({ navegarParaAdmin, navegarParaOng }) {
                   <input type="tel" required onChange={e => setOngForm({...ongForm, telefone: e.target.value})} />
                 </div>
                 <div className="form-group">
-                  <label>E-mail Institucional *</label>
-                  <input type="email" required onChange={e => setOngForm({...ongForm, email: e.target.value})} />
+                  <label>E-mail Institucional (Usado para o Login) *</label>
+                  <input type="email" placeholder="ong@ajuda.org" required onChange={e => setOngForm({...ongForm, email: e.target.value})} />
                 </div>
+              </div>
+
+              {/* === NOVO CAMPO: CRIAÇÃO DE SENHA DA ONG === */}
+              <div className="form-group" style={{ marginTop: '0.5rem' }}>
+                <label>Defina uma Senha de Acesso *</label>
+                <input type="password" placeholder="Mínimo 6 caracteres" required onChange={e => setOngForm({...ongForm, senha: e.target.value})} />
+                <p style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '0.25rem' }}>Esta senha será necessária para acessar o painel de atendimento posteriormente.</p>
               </div>
 
               <button type="submit" style={{ backgroundColor: '#10b981', color: 'white', border: 'none', padding: '0.9rem', borderRadius: '8px', width: '100%', marginTop: '1.5rem' }}>

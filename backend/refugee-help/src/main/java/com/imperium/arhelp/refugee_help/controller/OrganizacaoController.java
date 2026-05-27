@@ -1,6 +1,8 @@
 package com.imperium.arhelp.refugee_help.controller;
 
 import com.imperium.arhelp.refugee_help.model.Organizacao;
+import com.imperium.arhelp.refugee_help.model.LoginRequestDTO;
+import com.imperium.arhelp.refugee_help.repository.OrganizacaoRepository;
 import com.imperium.arhelp.refugee_help.service.OrganizacaoService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/organizacoes")
@@ -43,5 +46,22 @@ public class OrganizacaoController {
     public ResponseEntity<Void> excluir(@PathVariable Long id) {
         service.excluir(id);
         return ResponseEntity.noContent().build();
+    }
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequestDTO credentials) {
+        // 1. Busca a organização usando o 'service' que já está injetado lá em cima
+        Optional<Organizacao> orgOptional = service.buscarPorEmail(credentials.getEmail());
+
+        if (orgOptional.isPresent()) {
+            Organizacao org = orgOptional.get();
+
+            // 2. Compara a senha do banco com a senha enviada pelo Front-end
+            if (org.getSenha() != null && org.getSenha().equals(credentials.getPassword())) {
+                return ResponseEntity.ok(org); // Retorna HTTP 200 OK e os dados da ONG
+            }
+        }
+
+        // 3. Se o e-mail não existir ou a senha estiver errada, retorna erro
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("E-mail ou senha inválidos.");
     }
 }

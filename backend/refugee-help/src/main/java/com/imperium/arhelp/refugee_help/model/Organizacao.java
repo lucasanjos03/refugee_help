@@ -19,6 +19,7 @@ public class Organizacao {
 
     private String tipo; // ONG, Fundação, etc.
     private String descricao;
+    private String senha;
 
     // Serviços oferecidos (Checkbox na sua pauta)
     private String servicos;
@@ -56,6 +57,9 @@ public class Organizacao {
 
     public String getDescricao() { return descricao; }
     public void setDescricao(String descricao) { this.descricao = descricao; }
+
+    public String getSenha() { return senha; }
+    public void setSenha(String senha) { this.senha = senha; }
 
     public String getServicos() { return servicos; }
     public void setServicos(String servicos) { this.servicos = servicos; }
