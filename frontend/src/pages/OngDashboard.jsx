@@ -40,11 +40,23 @@ function OngDashboard({ navegarParaHome }) {
               <h4 style={{ fontSize: '1.2rem', color: '#0f172a' }}>{ref.nomeCompleto}</h4>
               <p style={{ fontSize: '0.9rem', color: '#64748b' }}>🌐 Origem: <strong>{ref.nacionalidade}</strong></p>
               <div style={{ marginTop: '0.5rem' }}>
-                {ref.needs ? ref.needs.map((n, i) => (
-                  <span key={i} style={{ background: '#eff6ff', color: '#3b82f6', padding: '0.2rem 0.6rem', borderRadius: '8px', fontSize: '0.8rem', marginRight: '0.5rem', fontWeight: 'bold' }}>{n}</span>
-                )) : ref.necessidades?.map((n, i) => (
-                  <span key={i} style={{ background: '#eff6ff', color: '#3b82f6', padding: '0.2rem 0.6rem', borderRadius: '8px', fontSize: '0.8rem', marginRight: '0.5rem', fontWeight: 'bold' }}>{n}</span>
-                ))}
+                
+                {/* Lógica Corrigida e Blindada contra tela branca */}
+                {Array.isArray(ref.needs) ? (
+                  ref.needs.map((n, i) => (
+                    <span key={i} style={{ background: '#eff6ff', color: '#3b82f6', padding: '0.2rem 0.6rem', borderRadius: '8px', fontSize: '0.8rem', marginRight: '0.5rem', fontWeight: 'bold' }}>{n}</span>
+                  ))
+                ) : Array.isArray(ref.necessidades) ? (
+                  ref.necessidades.map((n, i) => (
+                    <span key={i} style={{ background: '#eff6ff', color: '#3b82f6', padding: '0.2rem 0.6rem', borderRadius: '8px', fontSize: '0.8rem', marginRight: '0.5rem', fontWeight: 'bold' }}>{n}</span>
+                  ))
+                ) : (
+                  // Caso o dado venha como texto simples ("Saúde, Abrigo") ou nulo, exibe direto sem quebrar a tela
+                  <span style={{ background: '#f1f5f9', color: '#475569', padding: '0.2rem 0.6rem', borderRadius: '8px', fontSize: '0.8rem', marginRight: '0.5rem', fontWeight: 'bold' }}>
+                    {ref.necessidades || ref.needs || 'Nenhuma informada'}
+                  </span>
+                )}
+
               </div>
             </div>
             <button 

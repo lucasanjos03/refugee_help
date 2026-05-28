@@ -3,6 +3,7 @@ package com.imperium.arhelp.refugee_help.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 @Table(name = "refugiados")
@@ -25,8 +26,11 @@ public class Refugiado {
     private String cidade;
     private String enderecoCompleto;
 
-    @Column(columnDefinition = "TEXT")
-    private String necessidades;
+    // CORREÇÃO AQUI: Mapeado como lista de textos para casar perfeitamente com o React
+    @ElementCollection
+    @CollectionTable(name = "refugiado_necessidades", joinColumns = @JoinColumn(name = "refugiado_id"))
+    @Column(name = "necessidade")
+    private List<String> necessidades;
 
     @Column(columnDefinition = "TEXT")
     private String relatoSituacao;
@@ -54,7 +58,7 @@ public class Refugiado {
     public void setDocumentoIdentificacao(String documentoIdentificacao) { this.documentoIdentificacao = documentoIdentificacao; }
 
     public Integer getNumFamiliares() { return numFamiliares; }
-    public void setNumFamiliares(Integer numFamiliares) {this.numFamiliares = numFamiliares; }
+    public void setNumFamiliares(Integer numFamiliares) { this.numFamiliares = numFamiliares; }
 
     public String getTelefone() { return telefone; }
     public void setTelefone(String telefone) { this.telefone = telefone; }
@@ -68,10 +72,10 @@ public class Refugiado {
     public String getEnderecoCompleto() { return enderecoCompleto; }
     public void setEnderecoCompleto(String enderecoCompleto) { this.enderecoCompleto = enderecoCompleto; }
 
-    public String getNecessidades() { return necessidades; }
-    public void setNecessidades(String necessidades) { this.necessidades = necessidades; }
+    // GETTER E SETTER ATUALIZADOS PARA LIST
+    public List<String> getNecessidades() { return necessidades; }
+    public void setNecessidades(List<String> necessidades) { this.necessidades = necessidades; }
 
     public String getRelatoSituacao() { return relatoSituacao; }
     public void setRelatoSituacao(String relatoSituacao) { this.relatoSituacao = relatoSituacao; }
-
 }

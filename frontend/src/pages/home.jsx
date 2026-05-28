@@ -95,16 +95,23 @@ function Home({ navegarParaAdmin, navegarParaOng }) {
   const handleOngSubmit = (e) => {
     e.preventDefault();
     const servicosMarcados = Object.keys(servicosOferecidos).filter(key => servicosOferecidos[key]);
-    
-    // O payload agora envia automaticamente a 'senha' definida no formulário para o Java salvar no Postgres
     const payload = { ...ongForm, servicos: servicosMarcados };
 
-    api.post('/organizacoes', payload)
+    // Console log para você inspecionar no F12 se o payload tem dados de verdade!
+    console.log("PAYLOAD REAL QUE ESTÁ SAINDO:", payload);
+
+    api.post('/organizacoes', payload, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
       .then(() => {
-        alert('Organização cadastrada com sucesso! Você já pode realizar o login utilizando o e-mail e senha informados.');
+        alert('Organização cadastrada com sucesso!');
         e.target.reset();
       })
-      .catch(err => console.error(err));
+      .catch(err => {
+        console.error(err);
+      });
   };
 
   return (
