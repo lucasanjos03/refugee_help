@@ -42,4 +42,11 @@ public class RefugiadoService {
 
         return repository.save(existente);
     }
+
+    // NOVO - Função 9: Excluir refugiado (DELETE) com validação de ID
+    public void excluir(Long id) {
+        // Valida se o refugiado existe antes de tentar deletar
+        Refugiado existente = buscarPorId(id);
+        repository.delete(existente);
+    }
 }
