@@ -43,4 +43,11 @@ public class RefugiadoController {
         Refugiado atualizado = service.atualizar(id, dadosNovos);
         return ResponseEntity.ok(atualizado);
     }
+
+    // NOVO: Endpoint para Excluir Refugiado por ID (DELETE)
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> excluir(@PathVariable Long id) {
+        service.excluir(id);
+        return ResponseEntity.noContent().build();
+    }
 }

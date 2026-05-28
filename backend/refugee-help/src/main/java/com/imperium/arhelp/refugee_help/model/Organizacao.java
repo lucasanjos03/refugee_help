@@ -1,7 +1,10 @@
 package com.imperium.arhelp.refugee_help.model;
 
 import jakarta.persistence.*;
+import jakarta.persistence.ElementCollection;
+import java.util.List;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 @Entity
 @Table(name = "organizacoes")
@@ -10,7 +13,7 @@ public class Organizacao {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
+
     private String razaoSocial;
     private String nomeFantasia;
 
@@ -19,9 +22,12 @@ public class Organizacao {
 
     private String tipo; // ONG, Fundação, etc.
     private String descricao;
+    private String senha;
 
     // Serviços oferecidos (Checkbox na sua pauta)
-    private String servicos;
+    //private String servicos;
+    @ElementCollection
+    private List<String> servicos;
 
     // Funcionamento
     private String horarioFuncionamento;
@@ -57,8 +63,14 @@ public class Organizacao {
     public String getDescricao() { return descricao; }
     public void setDescricao(String descricao) { this.descricao = descricao; }
 
-    public String getServicos() { return servicos; }
-    public void setServicos(String servicos) { this.servicos = servicos; }
+    public String getSenha() { return senha; }
+    public void setSenha(String senha) { this.senha = senha; }
+
+    //public String getServicos() { return servicos; }
+    //public void setServicos(String servicos) { this.servicos = servicos; }
+
+    public List<String> getServicos() { return servicos; }
+    public void setServicos(List<String> servicos) { this.servicos = servicos; }
 
     public String getHorarioFuncionamento() { return horarioFuncionamento; }
     public void setHorarioFuncionamento(String horarioFuncionamento) { this.horarioFuncionamento = horarioFuncionamento; }
