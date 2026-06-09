@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Home from './pages/home';
 import AdminDashboard from './pages/AdminDashboard';
 import OngDashboard from './pages/OngDashboard'; // Vamos simular este componente abaixo

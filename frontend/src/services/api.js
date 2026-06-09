@@ -1,8 +1,18 @@
 import axios from 'axios';
 
-// Aqui apontamos diretamente para a porta 8080 do seu Spring Boot!
+const baseURL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8080/api';
+
 const api = axios.create({
-  baseURL: 'http://127.0.0.1:8080/api'
+  baseURL
+});
+
+api.interceptors.request.use((config) => {
+  const basicAuth = localStorage.getItem('basicAuth');
+  if (basicAuth) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Basic ${basicAuth}`;
+  }
+  return config;
 });
 
 export default api;
