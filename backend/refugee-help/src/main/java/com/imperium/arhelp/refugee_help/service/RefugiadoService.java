@@ -1,5 +1,6 @@
 package com.imperium.arhelp.refugee_help.service;
 
+import com.imperium.arhelp.refugee_help.exception.NotFoundException;
 import com.imperium.arhelp.refugee_help.model.Refugiado;
 import com.imperium.arhelp.refugee_help.repository.RefugiadoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +26,7 @@ public class RefugiadoService {
     // Função 7: Buscar por ID com tratamento de erro customizado
     public Refugiado buscarPorId(Long id) {
         return repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Refugiado com o ID " + id + " não foi encontrado."));
+                .orElseThrow(() -> new NotFoundException("Refugiado com o ID " + id + " não foi encontrado."));
     }
 
     // Função 8: Atualizar dados (PUT)
