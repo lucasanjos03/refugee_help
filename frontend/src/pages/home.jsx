@@ -1,1215 +1,886 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import api from "../services/api";
 
+const refugeeInitial = {
+  nomeCompleto: "",
+  nacionalidade: "",
+  dataNascimento: "",
+  genero: "Masculino",
+  documentoIdentificacao: "",
+  numFamiliares: 0,
+  telefone: "",
+  estado: "",
+  cidade: "",
+  enderecoCompleto: "",
+  relatoSituacao: "",
+};
+
+const orgInitial = {
+  razaoSocial: "",
+  nomeFantasia: "",
+  cnpj: "",
+  tipo: "ONG",
+  descricao: "",
+  horarioFuncionamento: "",
+  telefone: "",
+  email: "",
+  senha: "",
+  website: "",
+  idiomasAtendimento: "",
+  cep: "",
+  bairro: "",
+  estado: "",
+  cidade: "",
+  enderecoCompleto: "",
+};
+
+const needsInitial = {
+  Saúde: false,
+  Abrigo: false,
+  Emprego: false,
+  Cursos: false,
+  "Assistência Jurídica": false,
+  Alimentação: false,
+  Educação: false,
+  Documentação: false,
+};
+
+const servicesInitial = {
+  Saúde: false,
+  Abrigo: false,
+  "Emprego/Capacitação": false,
+  Cursos: false,
+  "Assistência Jurídica": false,
+  Alimentação: false,
+  Educação: false,
+  Documentação: false,
+};
+
+function Field({ id, label, required, hint, children }) {
+  return (
+    <div className="field">
+      <label htmlFor={id}>
+        {label}
+        {required && <span aria-hidden="true"> *</span>}
+      </label>
+      {hint && (
+        <p id={`${id}-hint`} className="field-hint">
+          {hint}
+        </p>
+      )}
+      {children}
+    </div>
+  );
+}
+
+function CheckGrid({ values, onChange }) {
+  return (
+    <div className="check-grid">
+      {Object.keys(values).map((item) => (
+        <label className="check-option" key={item}>
+          <input
+            type="checkbox"
+            checked={values[item]}
+            onChange={(e) => onChange(item, e.target.checked)}
+          />
+          <span>{item}</span>
+        </label>
+      ))}
+    </div>
+  );
+}
+
 function Home({ navegarParaAdmin, navegarParaOng }) {
   const { t, i18n } = useTranslation();
+  const dialogRef = useRef(null);
+  const [login, setLogin] = useState(null);
+  const [credentials, setCredentials] = useState({ email: "", password: "" });
+  const [loginStatus, setLoginStatus] = useState({ type: "", message: "" });
+  const [refugee, setRefugee] = useState(refugeeInitial);
+  const [needs, setNeeds] = useState(needsInitial);
+  const [org, setOrg] = useState(orgInitial);
+  const [services, setServices] = useState(servicesInitial);
+  const [refugeeStatus, setRefugeeStatus] = useState({ type: "", message: "" });
+  const [orgStatus, setOrgStatus] = useState({ type: "", message: "" });
+  const [query, setQuery] = useState("");
+  const [organizations, setOrganizations] = useState([]);
+  const [searchStatus, setSearchStatus] = useState("loading");
   const [stats, setStats] = useState(null);
 
-  // Controle de Modais de Login
-  const [showLogin, setShowLogin] = useState(false);
-  const [loginType, setLoginType] = useState("admin"); // 'admin' ou 'ong'
-  const [credentials, setCredentials] = useState({ email: "", password: "" });
-
-  // 1. ESTADO DO REFUGIADO SINCRONIZADO COM O MODEL JAVA
-  const [refugiadoForm, setRefugiadoForm] = useState({
-    nomeCompleto: "",
-    nacionalidade: "",
-    dataNascimento: "",
-    genero: "Masculino",
-    documentoIdentificacao: "",
-    numFamiliares: 0,
-    telefone: "",
-    estado: "",
-    cidade: "",
-    enderecoCompleto: "",
-    relatoSituacao: "", // Nome idêntico ao atributo Java
-  });
-
-  const [necessidades, setNecessidades] = useState({
-    Saúde: false,
-    Abrigo: false,
-    Emprego: false,
-    Cursos: false,
-    "Assistência Jurídica": false,
-    Alimentação: false,
-    Educação: false,
-    Documentação: false,
-  });
-
-  // 1. ESTADO DA ONG SINCRONIZADO COM O MODEL JAVA
-  const [ongForm, setOngForm] = useState({
-    razaoSocial: "",
-    nomeFantasia: "",
-    cnpj: "",
-    tipo: "ONG", // Alterado de tipoOrganizacao para tipo (igual ao Java)
-    descricao: "",
-    horarioFuncionamento: "",
-    telefone: "",
-    email: "",
-    senha: "",
-    website: "",
-    idiomasAtendimento: "",
-    cep: "",
-    bairro: "",
-    estado: "",
-    cidade: "",
-    enderecoCompleto: "",
-  });
-
-  const [servicosOferecidos, setServicosOferecidos] = useState({
-    Saúde: false,
-    Abrigo: false,
-    "Emprego/Capacitação": false,
-    Cursos: false,
-    "Assistência Jurídica": false,
-    Alimentação: false,
-    Educação: false,
-    Documentação: false,
-  });
-
-  // 2. ESTADOS PARA A BUSCA DINÂMICA
-  const [termoBusca, setTermoBusca] = useState("");
-  const [instituicoes, setInstituicoes] = useState([]);
-  const instituicoesFiltradas = useMemo(() => {
-    const termo = termoBusca.toLowerCase();
-    return instituicoes.filter(
-      (org) =>
-        org.nomeFantasia?.toLowerCase().includes(termo) ||
-        org.cidade?.toLowerCase().includes(termo) ||
-        org.estado?.toLowerCase().includes(termo) ||
-        org.servicos?.some((s) => s.toLowerCase().includes(termo)),
-    );
-  }, [termoBusca, instituicoes]);
-
-  // Carregar estatísticas e lista de instituições para a busca
   useEffect(() => {
+    api
+      .get("/organizacoes")
+      .then((res) => {
+        setOrganizations(res.data);
+        setSearchStatus("success");
+      })
+      .catch(() => setSearchStatus("error"));
+
     api
       .get("/plataforma/estatisticas")
       .then((response) => setStats(response.data))
-      .catch((error) => console.error("Erro ao buscar estatísticas:", error));
-
-    // Busca a lista de ONGs cadastradas no Java para alimentar a busca dinâmica
-    api
-      .get("/organizacoes")
-      .then((response) => {
-        setInstituicoes(response.data);
-      })
-      .catch((error) => {
-        console.error("Erro ao buscar organizações:", error);
-        // Fallback/Mock caso queira testar visualmente com dados fictícios
-        const mockOrgs = [
-          {
-            id: 1,
-            nomeFantasia: "Cáritas Humanitária",
-            tipo: "ONG",
-            cidade: "São Paulo",
-            estado: "SP",
-            servicos: ["Abrigo", "Alimentação"],
-            telefone: "11988887777",
-          },
-          {
-            id: 2,
-            nomeFantasia: "Cruz Vermelha Apoio",
-            tipo: "Filantrópica",
-            cidade: "Rio de Janeiro",
-            estado: "RJ",
-            servicos: ["Saúde", "Documentação"],
-            telefone: "21977776666",
-          },
-        ];
-        setInstituicoes(mockOrgs);
-      });
+      .catch(() => setStats(null));
   }, []);
 
-  const alterarIdioma = (event) => {
-    i18n.changeLanguage(event.target.value);
-  };
-
-  // Handlers genéricos para capturar inputs dinamicamente pelas tags 'name'
-  const handleRefugiadoInputChange = (e) => {
-    const { name, value } = e.target;
-    setRefugiadoForm({
-      ...refugiadoForm,
-      [name]: name === "numFamiliares" ? parseInt(value) || 0 : value,
-    });
-  };
-
-  const handleOngInputChange = (e) => {
-    const { name, value } = e.target;
-    setOngForm({ ...ongForm, [name]: value });
-  };
-
-  const handleLoginSubmit = (e) => {
-    e.preventDefault();
-    const basicAuth = btoa(`${credentials.email}:${credentials.password}`);
-    localStorage.setItem("basicAuth", basicAuth);
-
-    if (loginType === "admin") {
-      api
-        .get("/plataforma/admin/dashboard")
-        .then(() => {
-          setShowLogin(false);
-          navegarParaAdmin();
-        })
-        .catch(() => {
-          localStorage.removeItem("basicAuth");
-          alert("Credenciais de Admin inválidas!");
-        });
-      return;
+  useEffect(() => {
+    if (login) {
+      setTimeout(() => dialogRef.current?.focus(), 0);
     }
+  }, [login]);
 
-    api
-      .post("/organizacoes/login", credentials)
+  const filtered = useMemo(() => {
+    const term = query.trim().toLocaleLowerCase();
+    if (!term) return organizations;
+    return organizations.filter((item) =>
+      [item.nomeFantasia, item.cidade, item.estado, ...(item.servicos || [])]
+        .filter(Boolean)
+        .some((value) => value.toLocaleLowerCase().includes(term)),
+    );
+  }, [query, organizations]);
+
+  const change =
+    (setter) =>
+    ({ target: { name, value } }) =>
+      setter((current) => ({
+        ...current,
+        [name]:
+          name === "numFamiliares" ? Number.parseInt(value, 10) || 0 : value,
+      }));
+
+  const openLogin = (type) => {
+    setLogin(type);
+    setCredentials({ email: "", password: "" });
+    setLoginStatus({ type: "", message: "" });
+  };
+
+  const submitLogin = (event) => {
+    event.preventDefault();
+    setLoginStatus({ type: "loading", message: "Verificando acesso…" });
+    localStorage.setItem(
+      "basicAuth",
+      btoa(`${credentials.email}:${credentials.password}`),
+    );
+    const request =
+      login === "admin"
+        ? api.get("/plataforma/admin/dashboard")
+        : api.post("/organizacoes/login", credentials);
+
+    request
       .then(() => {
-        setShowLogin(false);
-        navegarParaOng();
+        setLogin(null);
+        login === "admin" ? navegarParaAdmin() : navegarParaOng();
       })
       .catch(() => {
         localStorage.removeItem("basicAuth");
-        alert(
-          "Erro ao autenticar! Verifique se o e-mail e senha estão corretos no banco de dados.",
-        );
+        setLoginStatus({
+          type: "error",
+          message:
+            "E-mail ou senha incorretos. Revise os dados e tente novamente.",
+        });
       });
   };
 
-  const handleRefugiadoSubmit = (e) => {
-    e.preventDefault();
-    const necessidadesMarcadas = Object.keys(necessidades).filter(
-      (key) => necessidades[key],
-    );
-    const payload = { ...refugiadoForm, necessidades: necessidadesMarcadas };
+  const submitRefugee = (event) => {
+    event.preventDefault();
+    setRefugeeStatus({ type: "loading", message: "Enviando solicitação…" });
+    const payload = {
+      ...refugee,
+      necessidades: Object.keys(needs).filter((key) => needs[key]),
+    };
 
     api
       .post("/refugiados", payload)
       .then(() => {
-        alert("Cadastro de Refugiado enviado com sucesso!");
-        setRefugiadoForm({
-          nomeCompleto: "",
-          nacionalidade: "",
-          dataNascimento: "",
-          genero: "Masculino",
-          documentoIdentificacao: "",
-          numFamiliares: 0,
-          telefone: "",
-          estado: "",
-          cidade: "",
-          enderecoCompleto: "",
-          relatoSituacao: "",
+        setRefugee(refugeeInitial);
+        setNeeds(needsInitial);
+        setRefugeeStatus({
+          type: "success",
+          message:
+            "Solicitação enviada. Uma organização poderá analisar as informações fornecidas.",
         });
-        setNecessidades({
-          Saúde: false,
-          Abrigo: false,
-          Emprego: false,
-          Cursos: false,
-          "Assistência Jurídica": false,
-          Alimentação: false,
-          Educação: false,
-          Documentação: false,
-        });
-        e.target.reset();
       })
-      .catch((err) => console.error(err));
+      .catch(() =>
+        setRefugeeStatus({
+          type: "error",
+          message:
+            "Não foi possível enviar agora. Seus dados continuam no formulário; tente novamente.",
+        }),
+      );
   };
 
-  const handleOngSubmit = (e) => {
-    e.preventDefault();
-    const servicosMarcados = Object.keys(servicosOferecidos).filter(
-      (key) => servicosOferecidos[key],
-    );
-    const payload = { ...ongForm, servicos: servicosMarcados };
+  const submitOrg = (event) => {
+    event.preventDefault();
+    setOrgStatus({ type: "loading", message: "Enviando cadastro…" });
+    const payload = {
+      ...org,
+      servicos: Object.keys(services).filter((key) => services[key]),
+    };
 
     api
       .post("/organizacoes", payload)
       .then(() => {
-        alert("Organização cadastrada com sucesso!");
-        // Atualiza a lista de busca dinâmica imediatamente após um novo cadastro
-        api
-          .get("/organizacoes")
-          .then((res) => setInstituicoes(res.data))
-          .catch(() => {});
-        e.target.reset();
+        setOrg(orgInitial);
+        setServices(servicesInitial);
+        setOrgStatus({
+          type: "success",
+          message: "Organização cadastrada com sucesso.",
+        });
+        return api.get("/organizacoes");
       })
-      .catch((err) => console.error(err));
+      .then((res) => res && setOrganizations(res.data))
+      .catch(() =>
+        setOrgStatus({
+          type: "error",
+          message:
+            "Não foi possível concluir o cadastro. Revise os dados e tente novamente.",
+        }),
+      );
   };
 
   return (
-    <div style={{ paddingTop: "70px" }}>
-      {/* HEADER */}
-      <nav className="header">
-        <div
-          style={{ fontWeight: "bold", fontSize: "1.4rem", color: "#3b82f6" }}
-        >
-          🕊️ AR Help
-        </div>
-        <div className="nav-links">
-          <a href="#inicio">{t("navHome")}</a>
-          <a href="#servicos">{t("navServices")}</a>
-          <a href="#refugiados">{t("navRefugees")}</a>
-          <a href="#organizacoes">{t("navOngs")}</a>
-          <a href="#busca">{t("navSearch")}</a>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            flexWrap: "wrap",
-            justifyContent: "center",
-          }}
-        >
-          <select
-            onChange={alterarIdioma}
-            defaultValue={i18n.language}
-            style={{ padding: "0.4rem", width: "auto" }}
-          >
-            <option value="pt">PT</option>
-            <option value="en">EN</option>
-            <option value="es">ES</option>
-          </select>
-          <button
-            onClick={() => {
-              setLoginType("ong");
-              setCredentials({ email: "", password: "" });
-              setShowLogin(true);
-            }}
-            style={{
-              backgroundColor: "transparent",
-              border: "1px solid #10b981",
-              color: "#10b981",
-              padding: "0.5rem 1rem",
-              borderRadius: "6px",
-              cursor: "pointer",
-            }}
-          >
-            🏢 Login ONG
-          </button>
-          <button
-            onClick={() => {
-              setLoginType("admin");
-              setCredentials({ email: "", password: "" });
-              setShowLogin(true);
-            }}
-            style={{
-              backgroundColor: "transparent",
-              border: "1px solid #3b82f6",
-              color: "#3b82f6",
-              padding: "0.5rem 1rem",
-              borderRadius: "6px",
-              cursor: "pointer",
-            }}
-          >
-            {t("btnAdmin")}
-          </button>
-        </div>
-      </nav>
-
-      {/* MODAL DE LOGIN */}
-      {showLogin && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(15, 23, 42, 0.8)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 2000,
-            padding: "1rem",
-          }}
-        >
-          <div
-            className="form-container"
-            style={{
-              width: "100%",
-              maxWidth: "400px",
-              position: "relative",
-              background: "white",
-              borderRadius: "12px",
-              padding: "2rem",
-            }}
-          >
-            <button
-              onClick={() => setShowLogin(false)}
-              style={{
-                position: "absolute",
-                top: "15px",
-                right: "15px",
-                background: "none",
-                border: "none",
-                fontSize: "1.2rem",
-                cursor: "pointer",
-              }}
-            >
-              ✕
-            </button>
-            <h3 style={{ marginBottom: "1rem", textAlign: "center" }}>
-              {loginType === "admin"
-                ? "🛡️ Painel Administrativo"
-                : "🏢 Acesso Organização"}
-            </h3>
-            <form onSubmit={handleLoginSubmit}>
-              <div className="form-group" style={{ marginBottom: "1rem" }}>
-                <label>E-mail de Acesso</label>
-                <input
-                  type="email"
-                  placeholder="exemplo@instituicao.org"
-                  required
-                  value={credentials.email}
-                  onChange={(e) =>
-                    setCredentials({ ...credentials, email: e.target.value })
-                  }
-                  style={{
-                    width: "100%",
-                    padding: "0.7rem",
-                    borderRadius: "6px",
-                    border: "1px solid #cbd5e1",
-                  }}
-                />
-              </div>
-              <div className="form-group" style={{ marginBottom: "1.5rem" }}>
-                <label>Senha</label>
-                <input
-                  type="password"
-                  placeholder="••••••"
-                  required
-                  value={credentials.password}
-                  onChange={(e) =>
-                    setCredentials({ ...credentials, password: e.target.value })
-                  }
-                  style={{
-                    width: "100%",
-                    padding: "0.7rem",
-                    borderRadius: "6px",
-                    border: "1px solid #cbd5e1",
-                  }}
-                />
-              </div>
-              <button
-                type="submit"
-                style={{
-                  backgroundColor:
-                    loginType === "admin" ? "#3b82f6" : "#10b981",
-                  color: "white",
-                  width: "100%",
-                  padding: "0.8rem",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                }}
-              >
-                Entrar no Sistema
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* SEÇÃO 1: HERO */}
-      <section id="inicio" className="hero-section">
-        <div className="container hero-grid">
-          <div>
-            <span
-              style={{
-                background: "rgba(59, 130, 246, 0.2)",
-                color: "#60a5fa",
-                padding: "0.4rem 1rem",
-                borderRadius: "20px",
-                fontSize: "0.85rem",
-                fontWeight: "bold",
-              }}
-            >
-              🕊️ Plataforma Humanitária
+    <div className="public-page">
+      <a className="skip-link" href="#content">
+        Ir para o conteúdo
+      </a>
+      <header className="site-header">
+        <div className="container header-inner">
+          <a className="brand" href="#start" aria-label="AR Help — início">
+            <span className="brand-mark" aria-hidden="true">
+              AR
             </span>
-            <h1
-              style={{
-                fontSize: "3rem",
-                margin: "1rem 0",
-                lineHeight: "1.2",
-                fontWeight: 800,
-              }}
+            <span>AR Help</span>
+          </a>
+          <nav className="primary-nav" aria-label="Navegação principal">
+            <a href="#request">Solicitar ajuda</a>
+            <a href="#find">Encontrar organização</a>
+            <a href="#organizations">Cadastrar organização</a>
+          </nav>
+          <div className="header-actions">
+            <select
+              className="language"
+              value={i18n.language}
+              onChange={(e) => i18n.changeLanguage(e.target.value)}
+              aria-label="Selecionar idioma"
             >
-              {t("welcome")}
-            </h1>
-            <p
-              style={{
-                color: "#94a3b8",
-                fontSize: "1.05rem",
-                marginBottom: "2rem",
-                lineHeight: "1.6",
-              }}
+              <option value="pt">PT</option>
+              <option value="en">EN</option>
+              <option value="es">ES</option>
+            </select>
+            <button
+              className="button button-quiet"
+              onClick={() => openLogin("ong")}
             >
-              {t("subtitle")}
-            </p>
-            <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-              <a href="#refugiados">
-                <button
-                  style={{
-                    backgroundColor: "#3b82f6",
-                    color: "white",
-                    border: "none",
-                    padding: "0.8rem 1.8rem",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                  }}
-                >
+              Acessar painel
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main id="content">
+        <section className="intro" id="start">
+          <div className="container intro-grid">
+            <div className="intro-copy">
+              <p className="context-label">
+                Apoio para pessoas refugiadas no Brasil
+              </p>
+              <h1>{stats ? t("welcome") : "Precisa de ajuda?"}</h1>
+              <p className="intro-lead">{t("subtitle")}</p>
+              <div className="intro-actions">
+                <a className="button button-primary" href="#request">
                   {t("btnRefugee")}
-                </button>
-              </a>
-              <a href="#organizacoes">
-                <button
-                  style={{
-                    backgroundColor: "transparent",
-                    color: "white",
-                    border: "1px solid rgba(255,255,255,0.3)",
-                    padding: "0.8rem 1.8rem",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                  }}
-                >
+                </a>
+                <a className="button button-secondary" href="#find">
                   {t("btnOng")}
-                </button>
-              </a>
+                </a>
+              </div>
+              <p className="privacy-note">
+                O cadastro é gratuito. Informe somente os dados necessários para
+                receber atendimento.
+              </p>
             </div>
+            <aside className="how" aria-labelledby="how-title">
+              <h2 id="how-title">Como funciona</h2>
+              <ol>
+                <li>
+                  <span>1</span>
+                  <p>
+                    <strong>Informe o que precisa.</strong>
+                    <br />
+                    Preencha seus dados e selecione os tipos de ajuda.
+                  </p>
+                </li>
+                <li>
+                  <span>2</span>
+                  <p>
+                    <strong>Uma organização analisa.</strong>
+                    <br />
+                    Organizações cadastradas podem consultar a solicitação.
+                  </p>
+                </li>
+                <li>
+                  <span>3</span>
+                  <p>
+                    <strong>Você recebe contato.</strong>
+                    <br />
+                    Mantenha seu telefone atualizado para receber retorno.
+                  </p>
+                </li>
+              </ol>
+            </aside>
           </div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "1.5rem",
-              width: "100%",
-            }}
-          >
-            {[
-              ["tempoResposta", "24h", "respTime"],
-              ["taxaSatisfacao", "98%", "satisfaction"],
-              ["idiomasSuportados", "3+", "languages"],
-              ["custo", "100%", "cost"],
-            ].map(([key, def, trans]) => (
-              <div
-                key={key}
-                style={{
-                  background: "rgba(255,255,255,0.03)",
-                  padding: "1.8rem",
-                  borderRadius: "14px",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                }}
-              >
-                <h2 style={{ color: "#3b82f6", fontSize: "2rem" }}>
-                  {stats
-                    ? key === "idiomasSuportados"
-                      ? stats[key] + "+"
-                      : stats[key]
-                    : def}
-                </h2>
-                <p
-                  style={{
-                    color: "#94a3b8",
-                    fontSize: "0.85rem",
-                    marginTop: "0.5rem",
-                  }}
-                >
-                  {t(trans)}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
 
-      {/* SEÇÃO 2: SERVIÇOS */}
-      <section id="servicos" style={{ padding: "5rem 0" }}>
-        <div className="container" style={{ textAlign: "center" }}>
-          <span
-            style={{
-              color: "#3b82f6",
-              fontWeight: "700",
-              textTransform: "uppercase",
-              fontSize: "0.8rem",
-              letterSpacing: "1px",
-            }}
-          >
-            {t("servicesTitle")}
-          </span>
-          <h2
-            style={{
-              fontSize: "2.2rem",
-              margin: "0.5rem 0 0 0",
-              fontWeight: "800",
-            }}
-          >
-            {t("servicesSubtitle")}
-          </h2>
-          <div className="auxilio-grid">
-            {[
-              "Saúde",
-              "Jurídico",
-              "Abrigo",
-              "Assistência Social",
-              "Emprego",
-              "Educação",
-            ].map((servico, idx) => (
-              <div key={idx} className="card-auxilio">
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: "1.2rem",
-                  }}
-                >
-                  <span style={{ fontSize: "1.5rem" }}>🔹</span>
-                  <span
-                    style={{
-                      background: "#ecfdf5",
-                      color: "#10b981",
-                      padding: "0.2rem 0.6rem",
-                      borderRadius: "12px",
-                      fontSize: "0.75rem",
-                      fontWeight: "700",
-                    }}
+        <section className="section section-muted" id="request">
+          <div className="container form-layout">
+            <div className="section-heading">
+              <p className="context-label">Para pessoas refugiadas</p>
+              <h2>Solicitar ajuda</h2>
+              <p>
+                Os campos com * são obrigatórios. Seus dados serão usados para
+                analisar a solicitação e entrar em contato.
+              </p>
+            </div>
+            <form className="form-panel" onSubmit={submitRefugee}>
+              <fieldset>
+                <legend>Dados pessoais</legend>
+                <div className="form-grid">
+                  <Field id="name" label={t("fullName")} required>
+                    <input
+                      id="name"
+                      name="nomeCompleto"
+                      value={refugee.nomeCompleto}
+                      onChange={change(setRefugee)}
+                      autoComplete="name"
+                      required
+                    />
+                  </Field>
+                  <Field id="nationality" label={t("nationality")} required>
+                    <input
+                      id="nationality"
+                      name="nacionalidade"
+                      value={refugee.nacionalidade}
+                      onChange={change(setRefugee)}
+                      required
+                    />
+                  </Field>
+                  <Field id="birth" label={t("birthDate")} required>
+                    <input
+                      id="birth"
+                      type="date"
+                      name="dataNascimento"
+                      value={refugee.dataNascimento}
+                      onChange={change(setRefugee)}
+                      required
+                    />
+                  </Field>
+                  <Field id="gender" label={t("gender")}>
+                    <select
+                      id="gender"
+                      name="genero"
+                      value={refugee.genero}
+                      onChange={change(setRefugee)}
+                    >
+                      <option>Masculino</option>
+                      <option>Feminino</option>
+                      <option>Outro</option>
+                    </select>
+                  </Field>
+                  <Field
+                    id="document"
+                    label="Documento de identificação"
+                    hint="Passaporte, RNM, CPF ou outro documento disponível."
+                    required
                   >
-                    {t("active")}
-                  </span>
+                    <input
+                      id="document"
+                      name="documentoIdentificacao"
+                      value={refugee.documentoIdentificacao}
+                      onChange={change(setRefugee)}
+                      aria-describedby="document-hint"
+                      required
+                    />
+                  </Field>
+                  <Field id="family" label="Número de familiares no país">
+                    <input
+                      id="family"
+                      type="number"
+                      min="0"
+                      name="numFamiliares"
+                      value={refugee.numFamiliares}
+                      onChange={change(setRefugee)}
+                    />
+                  </Field>
                 </div>
-                <h3 style={{ marginBottom: "0.5rem", fontWeight: "700" }}>
-                  {servico}
-                </h3>
-                <p
-                  style={{
-                    color: "var(--text-muted)",
-                    fontSize: "0.9rem",
-                    lineHeight: "1.5",
-                  }}
-                >
-                  {t("serviceDesc")}
+              </fieldset>
+              <fieldset>
+                <legend>Contato e localização</legend>
+                <div className="form-grid">
+                  <Field
+                    id="phone"
+                    label={t("phone")}
+                    hint="Inclua o DDD."
+                    required
+                  >
+                    <input
+                      id="phone"
+                      type="tel"
+                      name="telefone"
+                      value={refugee.telefone}
+                      onChange={change(setRefugee)}
+                      autoComplete="tel"
+                      aria-describedby="phone-hint"
+                      required
+                    />
+                  </Field>
+                  <Field id="state" label="Estado atual">
+                    <input
+                      id="state"
+                      name="estado"
+                      value={refugee.estado}
+                      onChange={change(setRefugee)}
+                      autoComplete="address-level1"
+                    />
+                  </Field>
+                  <Field id="city" label="Cidade atual">
+                    <input
+                      id="city"
+                      name="cidade"
+                      value={refugee.cidade}
+                      onChange={change(setRefugee)}
+                      autoComplete="address-level2"
+                    />
+                  </Field>
+                  <Field id="address" label="Endereço, se tiver">
+                    <input
+                      id="address"
+                      name="enderecoCompleto"
+                      value={refugee.enderecoCompleto}
+                      onChange={change(setRefugee)}
+                      autoComplete="street-address"
+                    />
+                  </Field>
+                </div>
+              </fieldset>
+              <fieldset>
+                <legend>Ajuda necessária</legend>
+                <p className="fieldset-help">
+                  Selecione todas as opções que se aplicam.
                 </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* SEÇÃO 3: CADASTRO DO REFUGIADO COMPLETO */}
-      <section
-        id="refugiados"
-        style={{ padding: "5rem 0", background: "#f8fafc" }}
-      >
-        <div className="container">
-          <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
-            <h2 style={{ fontSize: "2.2rem", fontWeight: "800" }}>
-              {t("btnRefugee").replace(" →", "")}
-            </h2>
-            <p style={{ color: "var(--text-muted)" }}>{t("formSubtitle")}</p>
-          </div>
-          <div className="form-container">
-            <form onSubmit={handleRefugiadoSubmit}>
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>{t("fullName")} *</label>
-                  <input
-                    type="text"
-                    name="nomeCompleto"
-                    required
-                    onChange={handleRefugiadoInputChange}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>{t("nationality")} *</label>
-                  <input
-                    type="text"
-                    name="nacionalidade"
-                    required
-                    onChange={handleRefugiadoInputChange}
-                  />
-                </div>
-              </div>
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>{t("birthDate")} *</label>
-                  <input
-                    type="date"
-                    name="dataNascimento"
-                    required
-                    onChange={handleRefugiadoInputChange}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>{t("gender")}</label>
-                  <select name="genero" onChange={handleRefugiadoInputChange}>
-                    <option value="Masculino">Masculino</option>
-                    <option value="Feminino">Feminino</option>
-                    <option value="Outro">Outro</option>
-                  </select>
-                </div>
-              </div>
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>Documento de Identificação *</label>
-                  <input
-                    type="text"
-                    name="documentoIdentificacao"
-                    placeholder="Passaporte, RNE, CPF..."
-                    required
-                    onChange={handleRefugiadoInputChange}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Número de Familiares no País</label>
-                  <input
-                    type="number"
-                    name="numFamiliares"
-                    min="0"
-                    defaultValue="0"
-                    onChange={handleRefugiadoInputChange}
-                  />
-                </div>
-              </div>
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>{t("phone")} *</label>
-                  <input
-                    type="tel"
-                    name="telefone"
-                    placeholder="Ex: (11) 99999-9999"
-                    required
-                    onChange={handleRefugiadoInputChange}
-                  />
-                </div>
-              </div>
-
-              {/* 1. COMPLEMENTO DE ENDEREÇO DO REFUGIADO */}
-              <div className="form-grid" style={{ marginTop: "1rem" }}>
-                <div className="form-group">
-                  <label>Estado atual</label>
-                  <input
-                    type="text"
-                    name="estado"
-                    placeholder="Ex: SP"
-                    onChange={handleRefugiadoInputChange}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Cidade atual</label>
-                  <input
-                    type="text"
-                    name="cidade"
-                    placeholder="Ex: São Paulo"
-                    onChange={handleRefugiadoInputChange}
-                  />
-                </div>
-              </div>
-              <div className="form-group" style={{ marginTop: "1rem" }}>
-                <label>Endereço Residencial Completo (Caso possua)</label>
-                <input
-                  type="text"
-                  name="enderecoCompleto"
-                  placeholder="Rua, Número, Bairro"
-                  onChange={handleRefugiadoInputChange}
+                <CheckGrid
+                  values={needs}
+                  onChange={(item, checked) =>
+                    setNeeds((current) => ({ ...current, [item]: checked }))
+                  }
                 />
-              </div>
-
-              <div className="form-group" style={{ marginTop: "1rem" }}>
-                <label>Selecione suas necessidades imediatas:</label>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "0.5rem",
-                    marginTop: "0.5rem",
-                  }}
+                <Field
+                  id="report"
+                  label="Conte um pouco sobre a situação"
+                  hint="Não inclua informações que não sejam necessárias para o atendimento."
                 >
-                  {Object.keys(necessidades).map((nec) => (
-                    <label
-                      key={nec}
-                      style={{
-                        fontWeight: "normal",
-                        display: "flex",
-                        alignItems: "center",
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={necessidades[nec]}
-                        onChange={(e) =>
-                          setNecessidades({
-                            ...necessidades,
-                            [nec]: e.target.checked,
-                          })
-                        }
-                        style={{ width: "auto", marginRight: "8px" }}
-                      />{" "}
-                      {nec}
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div className="form-group" style={{ marginTop: "1rem" }}>
-                <label>Descrição do Relato de Situação</label>
-                <textarea
-                  rows="3"
-                  name="relatoSituacao"
-                  placeholder="Compartilhe um resumo das suas dificuldades atuais..."
-                  onChange={handleRefugiadoInputChange}
-                ></textarea>
-              </div>
+                  <textarea
+                    id="report"
+                    rows="5"
+                    name="relatoSituacao"
+                    value={refugee.relatoSituacao}
+                    onChange={change(setRefugee)}
+                    aria-describedby="report-hint"
+                  />
+                </Field>
+              </fieldset>
+              {refugeeStatus.message && (
+                <p
+                  className={`status-message ${refugeeStatus.type}`}
+                  role="status"
+                >
+                  {refugeeStatus.message}
+                </p>
+              )}
               <button
-                type="submit"
-                style={{
-                  backgroundColor: "var(--bg-primary)",
-                  color: "white",
-                  border: "none",
-                  padding: "0.9rem",
-                  borderRadius: "8px",
-                  width: "100%",
-                  marginTop: "1.5rem",
-                  cursor: "pointer",
-                }}
+                className="button button-primary submit-button"
+                disabled={refugeeStatus.type === "loading"}
               >
-                {t("btnSubmitRefugee")}
+                {refugeeStatus.type === "loading"
+                  ? "Enviando…"
+                  : t("btnSubmitRefugee")}
               </button>
             </form>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* SEÇÃO 4: CADASTRO DE ORGANIZAÇÃO COMPLETO */}
-      <section
-        id="organizacoes"
-        style={{ padding: "5rem 0", background: "#ffffff" }}
-      >
-        <div className="container">
-          <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
-            <h2 style={{ fontSize: "2.2rem", fontWeight: "800" }}>
-              Portal das Organizações
-            </h2>
-            <p style={{ color: "var(--text-muted)" }}>
-              Cadastre sua instituição com a infraestrutura completa exigida.
-            </p>
-          </div>
-          <div
-            className="form-container"
-            style={{ border: "1px solid var(--border-color)" }}
-          >
-            <form onSubmit={handleOngSubmit}>
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>Razão Social *</label>
-                  <input
-                    type="text"
-                    name="razaoSocial"
-                    required
-                    onChange={handleOngInputChange}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Nome Fantasia *</label>
-                  <input
-                    type="text"
-                    name="nomeFantasia"
-                    required
-                    onChange={handleOngInputChange}
-                  />
-                </div>
-              </div>
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>CNPJ *</label>
-                  <input
-                    type="text"
-                    name="cnpj"
-                    placeholder="00.000.000/0000-00"
-                    required
-                    onChange={handleOngInputChange}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Tipo de Organização</label>
-                  <select name="tipo" onChange={handleOngInputChange}>
-                    <option value="ONG">ONG</option>
-                    <option value="Fundação">Fundação</option>
-                    <option value="Instituição Religiosa">
-                      Instituição Religiosa
-                    </option>
-                    <option value="Associação">Associação</option>
-                  </select>
-                </div>
-              </div>
-              <div className="form-group">
-                <label>Descrição das Atividades</label>
-                <textarea
-                  rows="3"
-                  name="descricao"
-                  placeholder="Fale um pouco sobre a missão da sua instituição..."
-                  onChange={handleOngInputChange}
-                ></textarea>
-              </div>
-
-              {/* 1. ENRIQUECIMENTO: CAMPOS DE ENDEREÇO DA ONG */}
-              <div className="form-grid" style={{ marginTop: "1rem" }}>
-                <div className="form-group">
-                  <label>CEP</label>
-                  <input
-                    type="text"
-                    name="cep"
-                    placeholder="00000-000"
-                    onChange={handleOngInputChange}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Estado</label>
-                  <input
-                    type="text"
-                    name="estado"
-                    placeholder="Ex: SP"
-                    onChange={handleOngInputChange}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Cidade</label>
-                  <input
-                    type="text"
-                    name="cidade"
-                    placeholder="Ex: São Paulo"
-                    onChange={handleOngInputChange}
-                  />
-                </div>
-              </div>
-              <div className="form-grid" style={{ marginTop: "1rem" }}>
-                <div className="form-group">
-                  <label>Bairro</label>
-                  <input
-                    type="text"
-                    name="bairro"
-                    onChange={handleOngInputChange}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Endereço Completo</label>
-                  <input
-                    type="text"
-                    name="enderecoCompleto"
-                    placeholder="Rua, Número, Bloco..."
-                    onChange={handleOngInputChange}
-                  />
-                </div>
-              </div>
-
-              {/* 1. ENRIQUECIMENTO: CAMPOS OPERACIONAIS DA ONG */}
-              <div className="form-grid" style={{ marginTop: "1rem" }}>
-                <div className="form-group">
-                  <label>Horário de Funcionamento</label>
-                  <input
-                    type="text"
-                    name="horarioFuncionamento"
-                    placeholder="Ex: Seg a Sex das 08h às 18h"
-                    onChange={handleOngInputChange}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Idiomas de Atendimento</label>
-                  <input
-                    type="text"
-                    name="idiomasAtendimento"
-                    placeholder="Ex: Português, Espanhol, Inglês"
-                    onChange={handleOngInputChange}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Website / Rede Social</label>
-                  <input
-                    type="text"
-                    name="website"
-                    placeholder="www.instituicao.org"
-                    onChange={handleOngInputChange}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group" style={{ marginTop: "1.5rem" }}>
-                <label>Serviços que sua instituição pode oferecer:</label>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "0.5rem",
-                    marginTop: "0.5rem",
-                  }}
-                >
-                  {Object.keys(servicosOferecidos).map((serv) => (
-                    <label
-                      key={serv}
-                      style={{
-                        fontWeight: "normal",
-                        display: "flex",
-                        alignItems: "center",
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={servicosOferecidos[serv]}
-                        onChange={(e) =>
-                          setServicosOferecidos({
-                            ...servicosOferecidos,
-                            [serv]: e.target.checked,
-                          })
-                        }
-                        style={{ width: "auto", marginRight: "8px" }}
-                      />{" "}
-                      {serv}
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div className="form-grid" style={{ marginTop: "1.5rem" }}>
-                <div className="form-group">
-                  <label>Telefone de Contato *</label>
-                  <input
-                    type="tel"
-                    name="telefone"
-                    required
-                    onChange={handleOngInputChange}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>E-mail Institucional (Usado para o Login) *</label>
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="ong@ajuda.org"
-                    required
-                    onChange={handleOngInputChange}
-                  />
-                </div>
-              </div>
-              <div className="form-group" style={{ marginTop: "0.5rem" }}>
-                <label>Defina uma Senha de Acesso *</label>
-                <input
-                  type="password"
-                  name="senha"
-                  placeholder="Mínimo 6 caracteres"
-                  required
-                  onChange={handleOngInputChange}
-                />
-              </div>
-              <button
-                type="submit"
-                style={{
-                  backgroundColor: "#10b981",
-                  color: "white",
-                  border: "none",
-                  padding: "0.9rem",
-                  borderRadius: "8px",
-                  width: "100%",
-                  marginTop: "1.5rem",
-                  cursor: "pointer",
-                }}
-              >
-                Cadastrar Organização Parceira
-              </button>
-            </form>
-          </div>
-        </div>
-      </section>
-
-      {/* SEÇÃO 5: BUSCA DINÂMICA REALIZADA EM TEMPO REAL */}
-      <section
-        id="busca"
-        style={{
-          padding: "5rem 0",
-          background: "#f8fafc",
-          textAlign: "center",
-        }}
-      >
-        <div className="container">
-          <h2>Busca Dinâmica de Instituições</h2>
-          <p style={{ color: "#64748b" }}>
-            Encontre pontos de apoio integrados ao banco de dados filtrando por
-            nome, cidade ou serviço.
-          </p>
-          <div style={{ maxWidth: "600px", margin: "2rem auto" }}>
-            <input
-              type="text"
-              placeholder="🔍 Digite uma cidade, nome da instituição ou serviço (Ex: Abrigo)..."
-              value={termoBusca}
-              onChange={(e) => setTermoBusca(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "1rem",
-                border: "1px solid #cbd5e1",
-                borderRadius: "8px",
-                fontSize: "1rem",
-              }}
-            />
-          </div>
-
-          {/* Renderização dinâmica do resultado da busca */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-              gap: "1.5rem",
-              marginTop: "2rem",
-            }}
-          >
-            {instituicoesFiltradas.length > 0 ? (
-              instituicoesFiltradas.map((org) => (
-                <div
-                  key={org.id}
-                  style={{
-                    background: "white",
-                    padding: "1.5rem",
-                    borderRadius: "12px",
-                    border: "1px solid #e2e8f0",
-                    textAlign: "left",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <div>
-                    <span
-                      style={{
-                        fontSize: "0.75rem",
-                        background: "#f1f5f9",
-                        padding: "0.2rem 0.6rem",
-                        borderRadius: "10px",
-                        color: "#475569",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {org.tipo || "Instituição"}
-                    </span>
-                    <h4
-                      style={{
-                        margin: "0.5rem 0",
-                        fontSize: "1.2rem",
-                        color: "#0f172a",
-                      }}
-                    >
-                      {org.nomeFantasia}
-                    </h4>
-                    <p
-                      style={{
-                        fontSize: "0.85rem",
-                        color: "#64748b",
-                        margin: "0.2rem 0",
-                      }}
-                    >
-                      📍 Local:{" "}
-                      <strong>
-                        {org.cidade || "Não informada"}-{org.estado || ""}
-                      </strong>
-                    </p>
-                    <p
-                      style={{
-                        fontSize: "0.85rem",
-                        color: "#64748b",
-                        margin: "0.2rem 0",
-                      }}
-                    >
-                      📞 Contato: {org.telefone || "Sem telefone"}
-                    </p>
-
-                    <div
-                      style={{
-                        marginTop: "0.8rem",
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: "0.3rem",
-                      }}
-                    >
-                      {org.servicos &&
-                        org.servicos.map((s, idx) => (
-                          <span
-                            key={idx}
-                            style={{
-                              background: "#ecfdf5",
-                              color: "#047857",
-                              fontSize: "0.75rem",
-                              padding: "0.1rem 0.5rem",
-                              borderRadius: "6px",
-                              fontWeight: "600",
-                            }}
-                          >
-                            {s}
-                          </span>
-                        ))}
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p style={{ color: "#94a3b8", gridColumn: "1 / -1" }}>
-                Nenhuma instituição encontrada para o termo digitado.
+        <section className="section" id="find">
+          <div className="container narrow-container">
+            <div className="section-heading">
+              <p className="context-label">Atendimento disponível</p>
+              <h2>Encontrar uma organização</h2>
+              <p>Busque pelo nome, cidade, estado ou tipo de serviço.</p>
+            </div>
+            <label className="search-field" htmlFor="org-search">
+              <span>Buscar organização</span>
+              <input
+                id="org-search"
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Ex.: abrigo ou São Paulo"
+              />
+            </label>
+            <div className="result-summary" aria-live="polite">
+              {searchStatus === "success" &&
+                `${filtered.length} ${filtered.length === 1 ? "organização encontrada" : "organizações encontradas"}`}
+            </div>
+            {searchStatus === "loading" && (
+              <p className="empty-state" role="status">
+                Carregando organizações…
               </p>
             )}
+            {searchStatus === "error" && (
+              <p className="status-message error" role="status">
+                Não foi possível carregar as organizações. Tente novamente mais
+                tarde.
+              </p>
+            )}
+            {searchStatus === "success" && filtered.length === 0 && (
+              <p className="empty-state">
+                Nenhuma organização encontrada. Tente outro nome, local ou
+                serviço.
+              </p>
+            )}
+            <div className="organization-list">
+              {filtered.map((item) => (
+                <article className="organization-row" key={item.id}>
+                  <div>
+                    <p className="org-type">{item.tipo || "Organização"}</p>
+                    <h3>{item.nomeFantasia}</h3>
+                    <p>
+                      {[item.cidade, item.estado].filter(Boolean).join(" — ") ||
+                        "Local não informado"}
+                    </p>
+                  </div>
+                  <div className="org-contact">
+                    <p>
+                      <strong>Telefone</strong>
+                      <br />
+                      {item.telefone || "Não informado"}
+                    </p>
+                    {item.servicos?.length > 0 && (
+                      <p>
+                        <strong>Serviços</strong>
+                        <br />
+                        {item.servicos.join(", ")}
+                      </p>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* FOOTER */}
-      <footer
-        id="contato"
-        style={{
-          background: "var(--bg-primary)",
-          color: "#94a3b8",
-          padding: "4rem 0 2rem 0",
-        }}
-      >
-        <div className="container">
-          <div className="footer-container">
-            <div>
-              <h4 style={{ color: "white", marginBottom: "1rem" }}>
-                🕊️ AR Help
-              </h4>
-              <p
-                style={{
-                  fontSize: "0.9rem",
-                  maxWidth: "300px",
-                  lineHeight: "1.5",
-                }}
+        <section className="section section-muted" id="organizations">
+          <div className="container form-layout">
+            <div className="section-heading">
+              <p className="context-label">Para organizações</p>
+              <h2>Cadastrar organização</h2>
+              <p>
+                Cadastre a instituição e os serviços oferecidos. Depois, use o
+                painel para consultar solicitações.
+              </p>
+              <button className="text-button" onClick={() => openLogin("ong")}>
+                Já tem cadastro? Acessar painel
+              </button>
+            </div>
+            <form className="form-panel" onSubmit={submitOrg}>
+              <fieldset>
+                <legend>Identificação</legend>
+                <div className="form-grid">
+                  <Field id="legalName" label="Razão social" required>
+                    <input
+                      id="legalName"
+                      name="razaoSocial"
+                      value={org.razaoSocial}
+                      onChange={change(setOrg)}
+                      required
+                    />
+                  </Field>
+                  <Field id="tradeName" label="Nome da organização" required>
+                    <input
+                      id="tradeName"
+                      name="nomeFantasia"
+                      value={org.nomeFantasia}
+                      onChange={change(setOrg)}
+                      required
+                    />
+                  </Field>
+                  <Field id="cnpj" label="CNPJ" required>
+                    <input
+                      id="cnpj"
+                      name="cnpj"
+                      value={org.cnpj}
+                      onChange={change(setOrg)}
+                      required
+                    />
+                  </Field>
+                  <Field id="type" label="Tipo">
+                    <select
+                      id="type"
+                      name="tipo"
+                      value={org.tipo}
+                      onChange={change(setOrg)}
+                    >
+                      <option>ONG</option>
+                      <option>Fundação</option>
+                      <option>Instituição Religiosa</option>
+                      <option>Associação</option>
+                    </select>
+                  </Field>
+                </div>
+                <Field id="description" label="Descrição das atividades">
+                  <textarea
+                    id="description"
+                    rows="4"
+                    name="descricao"
+                    value={org.descricao}
+                    onChange={change(setOrg)}
+                  />
+                </Field>
+              </fieldset>
+              <fieldset>
+                <legend>Localização e atendimento</legend>
+                <div className="form-grid">
+                  <Field id="postal" label="CEP">
+                    <input
+                      id="postal"
+                      name="cep"
+                      value={org.cep}
+                      onChange={change(setOrg)}
+                    />
+                  </Field>
+                  <Field id="orgState" label="Estado">
+                    <input
+                      id="orgState"
+                      name="estado"
+                      value={org.estado}
+                      onChange={change(setOrg)}
+                    />
+                  </Field>
+                  <Field id="orgCity" label="Cidade">
+                    <input
+                      id="orgCity"
+                      name="cidade"
+                      value={org.cidade}
+                      onChange={change(setOrg)}
+                    />
+                  </Field>
+                  <Field id="district" label="Bairro">
+                    <input
+                      id="district"
+                      name="bairro"
+                      value={org.bairro}
+                      onChange={change(setOrg)}
+                    />
+                  </Field>
+                  <Field id="orgAddress" label="Endereço">
+                    <input
+                      id="orgAddress"
+                      name="enderecoCompleto"
+                      value={org.enderecoCompleto}
+                      onChange={change(setOrg)}
+                    />
+                  </Field>
+                  <Field id="hours" label="Horário de atendimento">
+                    <input
+                      id="hours"
+                      name="horarioFuncionamento"
+                      value={org.horarioFuncionamento}
+                      onChange={change(setOrg)}
+                    />
+                  </Field>
+                  <Field id="languages" label="Idiomas de atendimento">
+                    <input
+                      id="languages"
+                      name="idiomasAtendimento"
+                      value={org.idiomasAtendimento}
+                      onChange={change(setOrg)}
+                    />
+                  </Field>
+                  <Field id="website" label="Site ou rede social">
+                    <input
+                      id="website"
+                      name="website"
+                      value={org.website}
+                      onChange={change(setOrg)}
+                    />
+                  </Field>
+                </div>
+              </fieldset>
+              <fieldset>
+                <legend>Serviços oferecidos</legend>
+                <CheckGrid
+                  values={services}
+                  onChange={(item, checked) =>
+                    setServices((current) => ({ ...current, [item]: checked }))
+                  }
+                />
+              </fieldset>
+              <fieldset>
+                <legend>Acesso ao painel</legend>
+                <div className="form-grid">
+                  <Field id="orgPhone" label="Telefone" required>
+                    <input
+                      id="orgPhone"
+                      type="tel"
+                      name="telefone"
+                      value={org.telefone}
+                      onChange={change(setOrg)}
+                      required
+                    />
+                  </Field>
+                  <Field id="orgEmail" label="E-mail institucional" required>
+                    <input
+                      id="orgEmail"
+                      type="email"
+                      name="email"
+                      value={org.email}
+                      onChange={change(setOrg)}
+                      required
+                    />
+                  </Field>
+                  <Field
+                    id="orgPassword"
+                    label="Senha"
+                    hint="Use pelo menos 6 caracteres."
+                    required
+                  >
+                    <input
+                      id="orgPassword"
+                      type="password"
+                      minLength="6"
+                      name="senha"
+                      value={org.senha}
+                      onChange={change(setOrg)}
+                      aria-describedby="orgPassword-hint"
+                      required
+                    />
+                  </Field>
+                </div>
+              </fieldset>
+              {orgStatus.message && (
+                <p className={`status-message ${orgStatus.type}`} role="status">
+                  {orgStatus.message}
+                </p>
+              )}
+              <button
+                className="button button-primary submit-button"
+                disabled={orgStatus.type === "loading"}
               >
-                Conectando pessoas refugiadas a redes de suporte humanitário
-                globais.
-              </p>
-            </div>
-            <div>
-              <h4 style={{ color: "white", marginBottom: "1rem" }}>Serviços</h4>
-              <p style={{ fontSize: "0.9rem", margin: "0.4rem 0" }}>
-                Saúde e Abrigo
-              </p>
-              <p style={{ fontSize: "0.9rem", margin: "0.4rem 0" }}>
-                Assistência Jurídica
-              </p>
-            </div>
-            <div>
-              <h4 style={{ color: "white", marginBottom: "1rem" }}>
-                Segurança
-              </h4>
-              <p style={{ fontSize: "0.9rem", margin: "0.4rem 0" }}>
-                Políticas de Privacidade
-              </p>
-              <p style={{ fontSize: "0.9rem", margin: "0.4rem 0" }}>
-                Painel Relatórios
-              </p>
-            </div>
+                {orgStatus.type === "loading"
+                  ? "Enviando…"
+                  : "Cadastrar organização"}
+              </button>
+            </form>
           </div>
-          <p
-            style={{
-              marginTop: "2rem",
-              textAlign: "center",
-              fontSize: "0.8rem",
-              color: "#64748b",
-            }}
-          >
-            © 2026 AR Help. Todos os direitos reservados.
-          </p>
+        </section>
+      </main>
+
+      <footer className="site-footer">
+        <div className="container footer-inner">
+          <div>
+            <strong>AR Help</strong>
+            <p>
+              Conexão direta entre pessoas refugiadas e organizações de apoio.
+            </p>
+          </div>
+          <div>
+            <button className="footer-link" onClick={() => openLogin("admin")}>
+              Acesso administrativo
+            </button>
+            <p>© 2026 AR Help</p>
+          </div>
         </div>
       </footer>
+
+      {login && (
+        <div
+          className="dialog-backdrop"
+          onMouseDown={(e) => e.target === e.currentTarget && setLogin(null)}
+        >
+          <section
+            className="login-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="login-title"
+            tabIndex="-1"
+            ref={dialogRef}
+            onKeyDown={(e) => e.key === "Escape" && setLogin(null)}
+          >
+            <button
+              className="dialog-close"
+              aria-label="Fechar"
+              onClick={() => setLogin(null)}
+            >
+              ×
+            </button>
+            <p className="context-label">Acesso restrito</p>
+            <h2 id="login-title">
+              {login === "admin"
+                ? "Painel administrativo"
+                : "Painel da organização"}
+            </h2>
+            <p>Informe as credenciais cadastradas.</p>
+            <form onSubmit={submitLogin}>
+              <Field
+                id="loginEmail"
+                label={login === "admin" ? "Credencial" : "E-mail"}
+                required
+              >
+                <input
+                  id="loginEmail"
+                  type={login === "admin" ? "text" : "email"}
+                  value={credentials.email}
+                  onChange={(e) =>
+                    setCredentials((current) => ({
+                      ...current,
+                      email: e.target.value,
+                    }))
+                  }
+                  autoComplete="username"
+                  required
+                />
+              </Field>
+              <Field id="loginPassword" label="Senha" required>
+                <input
+                  id="loginPassword"
+                  type="password"
+                  value={credentials.password}
+                  onChange={(e) =>
+                    setCredentials((current) => ({
+                      ...current,
+                      password: e.target.value,
+                    }))
+                  }
+                  autoComplete="current-password"
+                  required
+                />
+              </Field>
+              {loginStatus.message && (
+                <p
+                  className={`status-message ${loginStatus.type}`}
+                  role="status"
+                >
+                  {loginStatus.message}
+                </p>
+              )}
+              <button
+                className="button button-primary submit-button"
+                disabled={loginStatus.type === "loading"}
+              >
+                {loginStatus.type === "loading" ? "Verificando…" : "Entrar"}
+              </button>
+            </form>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
