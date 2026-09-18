@@ -1,7 +1,14 @@
-package com.imperium.arhelp.refugee_help.model; // Ajuste o pacote se preferir colocar em .dto
+package com.imperium.arhelp.refugee_help.model;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 
 public class LoginRequestDTO {
+    @NotBlank
+    @Email
     private String email;
+
+    @NotBlank
     private String password;
 
     // Construtor padrão necessário para o Jackson do Spring

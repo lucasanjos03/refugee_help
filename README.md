@@ -27,9 +27,10 @@ A plataforma divide-se em duas grandes frentes operacionais:
 ## 🛠️ Stack Tecnológica
 
 ### Back-end (API REST)
-* **Java 21** & **Spring Boot 3**
+* **Java 21** & **Spring Boot 4**
 * **Spring Data JPA** (Persistência e mapeamento ORM)
 * **Bean Validation** (Validação rigorosa de payloads com `@Valid` e `@NotBlank`)
+* **Spring Security** (Autenticação HTTP Basic e proteção de rotas sensíveis)
 * **PostgreSQL** (Banco de dados relacional de alta performance)
 
 ### Front-end
@@ -61,7 +62,7 @@ A API do back-end segue rigidamente as boas práticas RESTful, utilizando os ver
 * `DELETE /api/refugiados/{id}` - Exclusão lógica/física com deleção automática das coleções filhas (`@ElementCollection`).
 
 ### 🛡️ Painel Administrativo
-* `GET /plataforma/admin/dashboard` - Consolida métricas globais, contagem de registros e monitoramento de integridade do PostgreSQL.
+* `GET /api/plataforma/admin/dashboard` - Consolida métricas globais, contagem de registros e monitoramento de integridade do PostgreSQL.
 
 ---
 
@@ -70,5 +71,71 @@ A API do back-end segue rigidamente as boas práticas RESTful, utilizando os ver
 ### Pré-requisitos
 * Java 21 ou superior instalado
 * Node.js instalado
+* PostgreSQL em execução
+
+### Variáveis e credenciais
+O projeto agora usa configuração por ambiente para evitar segredos fixos no código.
+
+#### Back-end
+* `DB_URL` - URL JDBC do PostgreSQL
+* `DB_USER` - usuário do banco
+* `DB_PASSWORD` - senha do banco
+* `JPA_DDL_AUTO` - valor do Hibernate (`update`, `validate`, etc.)
+* `JPA_SHOW_SQL` - `true` ou `false`
+* `APP_CORS_ALLOWED_ORIGINS` - origens separadas por vírgula
+* `APP_ADMIN_USERNAME` - login do administrador
+* `APP_ADMIN_PASSWORD` - senha do administrador
+
+Exemplo no PowerShell:
+
+```powershell
+$env:DB_URL="jdbc:postgresql://localhost:5432/arhelp_db"
+$env:DB_USER="postgres"
+$env:DB_PASSWORD="sua_senha"
+$env:JPA_DDL_AUTO="update"
+$env:JPA_SHOW_SQL="false"
+$env:APP_CORS_ALLOWED_ORIGINS="http://localhost:5173,http://127.0.0.1:5173"
+$env:APP_ADMIN_USERNAME="admin@arhelp.org"
+$env:APP_ADMIN_PASSWORD="changeit"
+```
+
+#### Front-end
+* `VITE_API_URL` - URL base da API
+
+Exemplo:
+
+```powershell
+$env:VITE_API_URL="http://127.0.0.1:8080/api"
+```
+
+### Subindo o back-end
+
+```powershell
+cd .\backend\refugee-help
+.\mvnw spring-boot:run
+```
+
+### Subindo o front-end
+
+```powershell
+cd .\frontend
+npm install
+npm run dev
+```
+
+### Fluxo de autenticação
+* **Administrador:** usa as credenciais configuradas em `APP_ADMIN_USERNAME` e `APP_ADMIN_PASSWORD`
+* **Organização:** faz cadastro pela interface, com senha armazenada em hash BCrypt
+* **Rotas protegidas:** dashboard admin, exclusões e leitura de refugiados exigem autenticação
+
+### Verificações locais
+
+```powershell
+cd .\backend\refugee-help
+.\mvnw test
+
+cd ..\..\frontend
+npm run lint
+```
 
 

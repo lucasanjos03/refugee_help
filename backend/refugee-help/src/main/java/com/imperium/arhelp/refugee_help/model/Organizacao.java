@@ -3,6 +3,7 @@ package com.imperium.arhelp.refugee_help.model;
 import jakarta.persistence.*;
 import jakarta.persistence.ElementCollection;
 import java.util.List;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -22,6 +23,9 @@ public class Organizacao {
 
     private String tipo; // ONG, Fundação, etc.
     private String descricao;
+
+    @NotBlank
+    @Size(min = 6)
     private String senha;
 
     // Serviços oferecidos (Checkbox na sua pauta)
@@ -32,6 +36,8 @@ public class Organizacao {
     // Funcionamento
     private String horarioFuncionamento;
     private String telefone;
+    @NotBlank
+    @Email
     private String email;
     private String website;
     private String idiomasAtendimento;

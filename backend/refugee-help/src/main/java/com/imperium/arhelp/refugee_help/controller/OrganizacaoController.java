@@ -2,37 +2,41 @@ package com.imperium.arhelp.refugee_help.controller;
 
 import com.imperium.arhelp.refugee_help.model.Organizacao;
 import com.imperium.arhelp.refugee_help.model.LoginRequestDTO;
+import com.imperium.arhelp.refugee_help.dto.OrganizacaoResponseDTO;
 import com.imperium.arhelp.refugee_help.service.OrganizacaoService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/organizacoes")
-@CrossOrigin(origins = "*")
 public class OrganizacaoController {
 
     @Autowired
     private OrganizacaoService service;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @PostMapping
-    public ResponseEntity<Organizacao> criar(@Valid @RequestBody Organizacao org) {
-        Organizacao salva = service.salvar(org);
+    public ResponseEntity<OrganizacaoResponseDTO> criar(@Valid @RequestBody Organizacao org) {
+        OrganizacaoResponseDTO salva = service.salvar(org);
         return new ResponseEntity<>(salva, HttpStatus.CREATED);
     }
 
     @GetMapping
-    public ResponseEntity<List<Organizacao>> listarTodas() {
+    public ResponseEntity<List<OrganizacaoResponseDTO>> listarTodas() {
         return ResponseEntity.ok(service.listarTodas());
     }
 
     @GetMapping("/busca")
-    public ResponseEntity<List<Organizacao>> buscarPorTipo(@RequestParam String tipo) {
+    public ResponseEntity<List<OrganizacaoResponseDTO>> buscarPorTipo(@RequestParam String tipo) {
         return ResponseEntity.ok(service.buscarPorTipo(tipo));
     }
 
@@ -43,13 +47,13 @@ public class OrganizacaoController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequestDTO credentials) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO credentials) {
         Optional<Organizacao> orgOptional = service.buscarPorEmail(credentials.getEmail());
 
         if (orgOptional.isPresent()) {
             Organizacao org = orgOptional.get();
-            if (org.getSenha() != null && org.getSenha().equals(credentials.getPassword())) {
-                return ResponseEntity.ok(org);
+            if (org.getSenha() != null && passwordEncoder.matches(credentials.getPassword(), org.getSenha())) {
+                return ResponseEntity.ok(service.toResponseDTO(org));
             }
         }
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("E-mail ou senha inválidos.");
