@@ -2,6 +2,7 @@ package com.imperium.arhelp.refugee_help.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.PastOrPresent;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -17,6 +18,8 @@ public class Refugiado {
     private String nomeCompleto;
 
     private String nacionalidade;
+
+    @PastOrPresent(message = "A data de nascimento não pode ser posterior à data atual.")
     private LocalDate dataNascimento;
     private String genero;
     private String documentoIdentificacao;

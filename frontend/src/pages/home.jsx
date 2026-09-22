@@ -181,8 +181,25 @@ function Home({ navegarParaAdmin, navegarParaOng }) {
       });
   };
 
+  const hojeISO = () => {
+    const d = new Date();
+    const mes = String(d.getMonth() + 1).padStart(2, "0");
+    const dia = String(d.getDate()).padStart(2, "0");
+    return `${d.getFullYear()}-${mes}-${dia}`;
+  };
+  const dataMaxima = hojeISO();
+
   const submitRefugee = (event) => {
     event.preventDefault();
+    if (refugee.dataNascimento && refugee.dataNascimento > dataMaxima) {
+      setRefugeeStatus({
+        type: "error",
+        message:
+          "Data de nascimento inválida: não é permitido informar data posterior ao dia de hoje.",
+      });
+      document.getElementById("birth")?.focus();
+      return;
+    }
     setRefugeeStatus({ type: "loading", message: "Enviando solicitação…" });
     const payload = {
       ...refugee,
@@ -371,6 +388,7 @@ function Home({ navegarParaAdmin, navegarParaOng }) {
                       name="dataNascimento"
                       value={refugee.dataNascimento}
                       onChange={change(setRefugee)}
+                      max={dataMaxima}
                       required
                     />
                   </Field>
